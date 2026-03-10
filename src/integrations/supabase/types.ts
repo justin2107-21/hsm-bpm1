@@ -14,16 +14,489 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      consultations: {
+        Row: {
+          address: string | null
+          age: number | null
+          consultation_date: string
+          created_at: string
+          diagnosis: string | null
+          id: string
+          medicine: string | null
+          notes: string | null
+          patient_id: string | null
+          patient_name: string
+          recorded_by: string | null
+          status: string
+          symptoms: string | null
+        }
+        Insert: {
+          address?: string | null
+          age?: number | null
+          consultation_date?: string
+          created_at?: string
+          diagnosis?: string | null
+          id?: string
+          medicine?: string | null
+          notes?: string | null
+          patient_id?: string | null
+          patient_name: string
+          recorded_by?: string | null
+          status?: string
+          symptoms?: string | null
+        }
+        Update: {
+          address?: string | null
+          age?: number | null
+          consultation_date?: string
+          created_at?: string
+          diagnosis?: string | null
+          id?: string
+          medicine?: string | null
+          notes?: string | null
+          patient_id?: string | null
+          patient_name?: string
+          recorded_by?: string | null
+          status?: string
+          symptoms?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultations_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspections: {
+        Row: {
+          checklist: Json | null
+          created_at: string
+          establishment: string
+          findings: string | null
+          id: string
+          inspection_date: string
+          inspector_id: string | null
+          permit_id: string | null
+        }
+        Insert: {
+          checklist?: Json | null
+          created_at?: string
+          establishment: string
+          findings?: string | null
+          id?: string
+          inspection_date?: string
+          inspector_id?: string | null
+          permit_id?: string | null
+        }
+        Update: {
+          checklist?: Json | null
+          created_at?: string
+          establishment?: string
+          findings?: string | null
+          id?: string
+          inspection_date?: string
+          inspector_id?: string | null
+          permit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspections_permit_id_fkey"
+            columns: ["permit_id"]
+            isOneToOne: false
+            referencedRelation: "sanitation_permits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nutrition_records: {
+        Row: {
+          age: string | null
+          child_name: string
+          created_at: string
+          height: string | null
+          id: string
+          purok: string | null
+          recorded_by: string | null
+          status: string
+          weight: string | null
+        }
+        Insert: {
+          age?: string | null
+          child_name: string
+          created_at?: string
+          height?: string | null
+          id?: string
+          purok?: string | null
+          recorded_by?: string | null
+          status?: string
+          weight?: string | null
+        }
+        Update: {
+          age?: string | null
+          child_name?: string
+          created_at?: string
+          height?: string | null
+          id?: string
+          purok?: string | null
+          recorded_by?: string | null
+          status?: string
+          weight?: string | null
+        }
+        Relationships: []
+      }
+      patients: {
+        Row: {
+          address: string | null
+          age: number
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          age: number
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          age?: number
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      resident_complaints: {
+        Row: {
+          complaint_date: string
+          complaint_type: string
+          created_at: string
+          description: string | null
+          id: string
+          location: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          complaint_date?: string
+          complaint_type: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          complaint_date?: string
+          complaint_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      resident_health_records: {
+        Row: {
+          created_at: string
+          diagnosis: string | null
+          id: string
+          medicine: string | null
+          provider: string | null
+          record_date: string
+          record_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          diagnosis?: string | null
+          id?: string
+          medicine?: string | null
+          provider?: string | null
+          record_date?: string
+          record_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          diagnosis?: string | null
+          id?: string
+          medicine?: string | null
+          provider?: string | null
+          record_date?: string
+          record_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      resident_permits: {
+        Row: {
+          application_date: string
+          business_name: string
+          business_type: string | null
+          created_at: string
+          id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          application_date?: string
+          business_name: string
+          business_type?: string | null
+          created_at?: string
+          id?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          application_date?: string
+          business_name?: string
+          business_type?: string | null
+          created_at?: string
+          id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sanitation_permits: {
+        Row: {
+          address: string | null
+          application_date: string
+          applied_by: string | null
+          business_name: string
+          business_type: string | null
+          created_at: string
+          id: string
+          inspector: string | null
+          notes: string | null
+          owner_name: string
+          status: string
+        }
+        Insert: {
+          address?: string | null
+          application_date?: string
+          applied_by?: string | null
+          business_name: string
+          business_type?: string | null
+          created_at?: string
+          id?: string
+          inspector?: string | null
+          notes?: string | null
+          owner_name: string
+          status?: string
+        }
+        Update: {
+          address?: string | null
+          application_date?: string
+          applied_by?: string | null
+          business_name?: string
+          business_type?: string | null
+          created_at?: string
+          id?: string
+          inspector?: string | null
+          notes?: string | null
+          owner_name?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      surveillance_cases: {
+        Row: {
+          case_count: number
+          case_date: string
+          created_at: string
+          details: string | null
+          disease: string
+          id: string
+          patient_location: string | null
+          reported_by: string | null
+          reporter: string | null
+          status: string
+        }
+        Insert: {
+          case_count?: number
+          case_date?: string
+          created_at?: string
+          details?: string | null
+          disease: string
+          id?: string
+          patient_location?: string | null
+          reported_by?: string | null
+          reporter?: string | null
+          status?: string
+        }
+        Update: {
+          case_count?: number
+          case_date?: string
+          created_at?: string
+          details?: string | null
+          disease?: string
+          id?: string
+          patient_location?: string | null
+          reported_by?: string | null
+          reporter?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vaccinations: {
+        Row: {
+          age: string | null
+          bhw_name: string | null
+          child_name: string
+          created_at: string
+          id: string
+          recorded_by: string | null
+          status: string
+          vaccination_date: string
+          vaccine: string
+        }
+        Insert: {
+          age?: string | null
+          bhw_name?: string | null
+          child_name: string
+          created_at?: string
+          id?: string
+          recorded_by?: string | null
+          status?: string
+          vaccination_date?: string
+          vaccine: string
+        }
+        Update: {
+          age?: string | null
+          bhw_name?: string | null
+          child_name?: string
+          created_at?: string
+          id?: string
+          recorded_by?: string | null
+          status?: string
+          vaccination_date?: string
+          vaccine?: string
+        }
+        Relationships: []
+      }
+      wastewater_complaints: {
+        Row: {
+          assigned_to: string | null
+          complainant: string
+          complaint_date: string
+          complaint_type: string
+          created_at: string
+          description: string | null
+          filed_by: string | null
+          id: string
+          location: string | null
+          status: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          complainant: string
+          complaint_date?: string
+          complaint_type: string
+          created_at?: string
+          description?: string | null
+          filed_by?: string | null
+          id?: string
+          location?: string | null
+          status?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          complainant?: string
+          complaint_date?: string
+          complaint_type?: string
+          created_at?: string
+          description?: string | null
+          filed_by?: string | null
+          id?: string
+          location?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role:
+        | "Resident_User"
+        | "BusinessOwner_User"
+        | "BHW_User"
+        | "BSI_User"
+        | "Clerk_User"
+        | "Captain_User"
+        | "SysAdmin_User"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +623,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: [
+        "Resident_User",
+        "BusinessOwner_User",
+        "BHW_User",
+        "BSI_User",
+        "Clerk_User",
+        "Captain_User",
+        "SysAdmin_User",
+      ],
+    },
   },
 } as const
