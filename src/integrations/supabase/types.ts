@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      certificates: {
+        Row: {
+          certificate_number: string | null
+          certificate_type: string
+          created_at: string
+          document_url: string | null
+          establishment_id: string
+          expiry_date: string | null
+          id: string
+          issued_date: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          certificate_number?: string | null
+          certificate_type?: string
+          created_at?: string
+          document_url?: string | null
+          establishment_id: string
+          expiry_date?: string | null
+          id?: string
+          issued_date?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          certificate_number?: string | null
+          certificate_type?: string
+          created_at?: string
+          document_url?: string | null
+          establishment_id?: string
+          expiry_date?: string | null
+          id?: string
+          issued_date?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificates_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consultations: {
         Row: {
           address: string | null
@@ -69,6 +116,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      establishments: {
+        Row: {
+          address: string | null
+          barangay: string | null
+          business_name: string
+          business_permit_number: string | null
+          business_type: string | null
+          contact_number: string | null
+          created_at: string
+          id: string
+          issuing_lgu: string | null
+          owner_name: string
+          permit_document_url: string | null
+          permit_expiry_date: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_notes: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          barangay?: string | null
+          business_name: string
+          business_permit_number?: string | null
+          business_type?: string | null
+          contact_number?: string | null
+          created_at?: string
+          id?: string
+          issuing_lgu?: string | null
+          owner_name: string
+          permit_document_url?: string | null
+          permit_expiry_date?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          barangay?: string | null
+          business_name?: string
+          business_permit_number?: string | null
+          business_type?: string | null
+          contact_number?: string | null
+          created_at?: string
+          id?: string
+          issuing_lgu?: string | null
+          owner_name?: string
+          permit_document_url?: string | null
+          permit_expiry_date?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       inspections: {
         Row: {
@@ -173,6 +283,50 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          establishment_id: string | null
+          id: string
+          paid_at: string | null
+          payment_type: string
+          reference_number: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          establishment_id?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_type: string
+          reference_number?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          establishment_id?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_type?: string
+          reference_number?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -339,6 +493,42 @@ export type Database = {
         }
         Relationships: []
       }
+      service_requests: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          reference_id: string | null
+          request_type: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          request_type: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          request_type?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       surveillance_cases: {
         Row: {
           case_count: number
@@ -490,7 +680,7 @@ export type Database = {
     }
     Enums: {
       app_role:
-        | "Resident_User"
+        | "Citizen_User"
         | "BusinessOwner_User"
         | "BHW_User"
         | "BSI_User"
@@ -625,7 +815,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: [
-        "Resident_User",
+        "Citizen_User",
         "BusinessOwner_User",
         "BHW_User",
         "BSI_User",
