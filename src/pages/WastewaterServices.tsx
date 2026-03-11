@@ -18,7 +18,7 @@ const WastewaterServices = () => {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ complaint_type: "", location: "", description: "" });
-  const isResident = currentRole === "Resident_User";
+  const isResident = currentRole === "Citizen_User";
   const queryClient = useQueryClient();
 
   const { data: complaints = [] } = useQuery({
