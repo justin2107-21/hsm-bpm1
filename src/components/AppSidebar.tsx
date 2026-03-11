@@ -7,10 +7,16 @@ import {
   Activity,
   Settings,
   LogOut,
-  Home,
+  QrCode,
+  HeartPulse,
+  ShieldAlert,
+  Building2,
+  FileCheck,
+  Search,
+  Award,
+  CreditCard,
   FileText,
   MessageSquare,
-  QrCode,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth, type UserRole } from "@/contexts/AuthContext";
@@ -31,64 +37,93 @@ interface NavItem {
   title: string;
   url: string;
   icon: React.ComponentType<{ className?: string }>;
-  roles: UserRole[];
 }
 
-const mainNav: NavItem[] = [
+interface NavSection {
+  label: string;
+  items: NavItem[];
+  showIf?: (role: UserRole, hasEstablishments: boolean) => boolean;
+}
+
+// Staff/Admin navigation
+const staffSections: NavSection[] = [
   {
-    title: "Dashboard",
-    url: "/",
-    icon: LayoutDashboard,
-    roles: ["BHW_User", "BSI_User", "Clerk_User", "Captain_User", "SysAdmin_User"],
-  },
-  {
-    title: "Health Center Services",
-    url: "/health-center",
-    icon: Stethoscope,
-    roles: ["BHW_User", "Clerk_User", "Captain_User"],
-  },
-  {
-    title: "Sanitation Permit",
-    url: "/sanitation-permit",
-    icon: ClipboardCheck,
-    roles: ["BSI_User", "Clerk_User", "Captain_User", "BusinessOwner_User"],
-  },
-  {
-    title: "Immunization Tracker",
-    url: "/immunization",
-    icon: Syringe,
-    roles: ["BHW_User", "Clerk_User", "Captain_User"],
-  },
-  {
-    title: "Wastewater & Septic",
-    url: "/wastewater",
-    icon: Droplets,
-    roles: ["BSI_User", "Clerk_User", "Resident_User"],
-  },
-  {
-    title: "Health Surveillance",
-    url: "/surveillance",
-    icon: Activity,
-    roles: ["BHW_User", "Clerk_User", "Captain_User", "SysAdmin_User"],
+    label: "Navigation",
+    items: [
+      { title: "Dashboard", url: "/", icon: LayoutDashboard },
+      { title: "Health Center Services", url: "/health-center", icon: Stethoscope },
+      { title: "Sanitation Permit", url: "/sanitation-permit", icon: ClipboardCheck },
+      { title: "Immunization Tracker", url: "/immunization", icon: Syringe },
+      { title: "Wastewater & Septic", url: "/wastewater", icon: Droplets },
+      { title: "Health Surveillance", url: "/surveillance", icon: Activity },
+    ],
   },
 ];
 
-const residentNav: NavItem[] = [
-  { title: "My Health Records", url: "/my-health", icon: Home, roles: ["Resident_User"] },
-  { title: "My Business Permits", url: "/my-permits", icon: FileText, roles: ["Resident_User", "BusinessOwner_User"] },
-  { title: "My Complaints", url: "/my-complaints", icon: MessageSquare, roles: ["Resident_User"] },
-  { title: "My QR Citizen ID", url: "/my-qr", icon: QrCode, roles: ["Resident_User"] },
+// Citizen navigation sections
+const citizenSections: NavSection[] = [
+  {
+    label: "Main",
+    items: [
+      { title: "Dashboard", url: "/", icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: "Citizen Services",
+    items: [
+      { title: "My QR Citizen ID", url: "/citizen/qr", icon: QrCode },
+      { title: "Health Services", url: "/citizen/health", icon: HeartPulse },
+      { title: "Vaccination & Nutrition", url: "/citizen/vaccination", icon: Syringe },
+      { title: "Disease Reporting", url: "/citizen/disease-reporting", icon: ShieldAlert },
+      { title: "Sanitation Complaints", url: "/citizen/sanitation-complaints", icon: MessageSquare },
+    ],
+  },
+  {
+    label: "Business Services",
+    showIf: (_role, hasEstablishments) => hasEstablishments,
+    items: [
+      { title: "My Establishments", url: "/citizen/establishments", icon: Building2 },
+      { title: "Sanitary Permit", url: "/citizen/sanitary-permit", icon: FileCheck },
+      { title: "Inspection Status", url: "/citizen/inspections", icon: Search },
+      { title: "Certificates", url: "/citizen/certificates", icon: Award },
+      { title: "Payments", url: "/citizen/payments", icon: CreditCard },
+    ],
+  },
+  {
+    label: "Requests & Tracking",
+    items: [
+      { title: "My Service Requests", url: "/citizen/requests", icon: FileText },
+    ],
+  },
 ];
+
+// Role-based filtering for staff nav
+const staffRoleFilter: Record<string, UserRole[]> = {
+  "/": ["BHW_User", "BSI_User", "Clerk_User", "Captain_User", "SysAdmin_User"],
+  "/health-center": ["BHW_User", "Clerk_User", "Captain_User"],
+  "/sanitation-permit": ["BSI_User", "Clerk_User", "Captain_User"],
+  "/immunization": ["BHW_User", "Clerk_User", "Captain_User"],
+  "/wastewater": ["BSI_User", "Clerk_User"],
+  "/surveillance": ["BHW_User", "Clerk_User", "Captain_User", "SysAdmin_User"],
+};
 
 export function AppSidebar() {
-  const { currentRole, signOut } = useAuth();
+  const { currentRole, hasEstablishments, signOut } = useAuth();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
 
-  const isResident = currentRole === "Resident_User" || currentRole === "BusinessOwner_User";
-  const navItems = isResident
-    ? residentNav.filter((item) => item.roles.includes(currentRole))
-    : mainNav.filter((item) => item.roles.includes(currentRole));
+  const isCitizen = currentRole === "Citizen_User" || currentRole === "BusinessOwner_User";
+
+  const sections = isCitizen
+    ? citizenSections
+        .filter((s) => !s.showIf || s.showIf(currentRole, hasEstablishments || currentRole === "BusinessOwner_User"))
+    : staffSections.map((s) => ({
+        ...s,
+        items: s.items.filter((item) => {
+          const allowed = staffRoleFilter[item.url];
+          return !allowed || allowed.includes(currentRole);
+        }),
+      }));
 
   return (
     <Sidebar collapsible="icon" className="sidebar-gradient border-r-0">
@@ -107,30 +142,32 @@ export function AppSidebar() {
           </div>
         )}
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/50 text-[10px] uppercase tracking-wider">
-            {isResident ? "My Portal" : "Navigation"}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end={item.url === "/"}
-                      className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
-                      activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                    >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && <span className="text-sm">{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {sections.map((section) => (
+          <SidebarGroup key={section.label}>
+            <SidebarGroupLabel className="text-sidebar-foreground/50 text-[10px] uppercase tracking-wider">
+              {section.label}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {section.items.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        end={item.url === "/"}
+                        className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+                        activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                      >
+                        <item.icon className="mr-2 h-4 w-4" />
+                        {!collapsed && <span className="text-sm">{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
 
       <SidebarFooter>
