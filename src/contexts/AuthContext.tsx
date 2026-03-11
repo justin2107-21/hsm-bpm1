@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
 export type UserRole =
-  | "Resident_User"
+  | "Citizen_User"
   | "BusinessOwner_User"
   | "BHW_User"
   | "BSI_User"
@@ -12,7 +12,7 @@ export type UserRole =
   | "SysAdmin_User";
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  Resident_User: "Resident",
+  Citizen_User: "Citizen",
   BusinessOwner_User: "Business Owner",
   BHW_User: "Barangay Health Worker",
   BSI_User: "Sanitary Inspector",
@@ -27,6 +27,7 @@ interface AuthContextType {
   currentRole: UserRole;
   userName: string;
   loading: boolean;
+  hasEstablishments: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
@@ -36,9 +37,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [currentRole, setCurrentRole] = useState<UserRole>("Resident_User");
+  const [currentRole, setCurrentRole] = useState<UserRole>("Citizen_User");
   const [userName, setUserName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [hasEstablishments, setHasEstablishments] = useState(false);
 
   const fetchUserRole = async (userId: string) => {
     const { data } = await supabase.rpc('get_user_role', { _user_id: userId });
@@ -58,34 +60,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const fetchEstablishments = async (userId: string) => {
+    const { data } = await supabase
+      .from('establishments')
+      .select('id')
+      .eq('user_id', userId)
+      .limit(1);
+    setHasEstablishments(!!(data && data.length > 0));
+  };
+
+  const fetchUserData = (userId: string) => {
+    fetchUserRole(userId);
+    fetchProfile(userId);
+    fetchEstablishments(userId);
+  };
+
   useEffect(() => {
-    // Set up auth listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Use setTimeout to avoid potential deadlock with Supabase client
-          setTimeout(() => {
-            fetchUserRole(session.user.id);
-            fetchProfile(session.user.id);
-          }, 0);
+          setTimeout(() => fetchUserData(session.user.id), 0);
         } else {
-          setCurrentRole("Resident_User");
+          setCurrentRole("Citizen_User");
           setUserName("");
+          setHasEstablishments(false);
         }
         setLoading(false);
       }
     );
 
-    // THEN check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchUserRole(session.user.id);
-        fetchProfile(session.user.id);
+        fetchUserData(session.user.id);
       }
       setLoading(false);
     });
@@ -102,12 +113,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
-    setCurrentRole("Resident_User");
+    setCurrentRole("Citizen_User");
     setUserName("");
+    setHasEstablishments(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, currentRole, userName, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, currentRole, userName, loading, hasEstablishments, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

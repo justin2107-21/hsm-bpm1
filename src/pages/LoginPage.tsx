@@ -8,7 +8,7 @@ import { Activity, LogIn, Users } from "lucide-react";
 import { toast } from "sonner";
 
 const QUICK_LOGINS: { role: UserRole; email: string; label: string }[] = [
-  { role: "Resident_User", email: "resident@demo.com", label: "Resident" },
+  { role: "Citizen_User", email: "resident@demo.com", label: "Citizen" },
   { role: "BusinessOwner_User", email: "business@demo.com", label: "Business Owner" },
   { role: "BHW_User", email: "bhw@demo.com", label: "BHW" },
   { role: "BSI_User", email: "bsi@demo.com", label: "Sanitary Inspector" },
@@ -28,25 +28,20 @@ const LoginPage = () => {
     e.preventDefault();
     setLoading(true);
     const { error } = await signIn(email, password);
-    if (error) {
-      toast.error(error.message);
-    }
+    if (error) toast.error(error.message);
     setLoading(false);
   };
 
   const handleQuickLogin = async (email: string, role: string) => {
     setQuickLoading(role);
     const { error } = await signIn(email, "demo123456");
-    if (error) {
-      toast.error(error.message);
-    }
+    if (error) toast.error(error.message);
     setQuickLoading(null);
   };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
-        {/* Logo */}
         <div className="text-center space-y-2">
           <div className="h-14 w-14 rounded-xl health-gradient flex items-center justify-center mx-auto shadow-lg">
             <Activity className="h-7 w-7 text-primary-foreground" />
@@ -57,7 +52,6 @@ const LoginPage = () => {
           <p className="text-sm text-muted-foreground">Government Service Management System</p>
         </div>
 
-        {/* Login Form */}
         <Card className="glass-card">
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-heading flex items-center gap-2">
@@ -68,23 +62,11 @@ const LoginPage = () => {
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <Label className="text-xs">Email</Label>
-                <Input
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+                <Input type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
               </div>
               <div>
                 <Label className="text-xs">Password</Label>
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <Input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Signing in..." : "Sign In"}
@@ -93,7 +75,6 @@ const LoginPage = () => {
           </CardContent>
         </Card>
 
-        {/* Quick Login */}
         <Card className="glass-card">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-heading flex items-center gap-2 text-muted-foreground">
@@ -102,7 +83,7 @@ const LoginPage = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-2">
-              {QUICK_LOGINS.map((q) => (
+              {QUICK_LOGINS.map(q => (
                 <Button
                   key={q.role}
                   variant="outline"
