@@ -1,0 +1,177 @@
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Syringe, HeartPulse, Send } from "lucide-react";
+import StatusBadge from "@/components/StatusBadge";
+import { toast } from "sonner";
+
+const BhwHealthPrograms = () => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [citizenId, setCitizenId] = useState("");
+  const [vaccine, setVaccine] = useState("BCG");
+  const [notes, setNotes] = useState("");
+
+  const { data: vaccinations = [] } = useQuery({
+    queryKey: ["bhw_vaccinations"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("vaccinations")
+        .select("*")
+        .order("vaccination_date", { ascending: false })
+        .limit(50);
+      return data || [];
+    },
+  });
+
+  const { data: nutrition = [] } = useQuery({
+    queryKey: ["bhw_nutrition"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("nutrition_records")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      return data || [];
+    },
+  });
+
+  const requestMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("service_requests").insert({
+        user_id: user!.id,
+        request_type: "Vaccination",
+        title: `Vaccination Request — ${vaccine}`,
+        description: `Citizen ID: ${citizenId || "N/A"} — ${notes}`,
+        status: "Submitted",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bhw_vaccinations"] });
+      setCitizenId("");
+      setNotes("");
+      toast.success("Vaccination request submitted");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold font-heading">Health Programs</h1>
+        <p className="text-sm text-muted-foreground">Vaccination requests and nutrition program monitoring</p>
+      </div>
+
+      <Card className="glass-card">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-heading flex items-center gap-2">
+            <Syringe className="h-4 w-4 text-primary" /> Assist Vaccination Request
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <Label className="text-xs">Citizen ID</Label>
+              <Input placeholder="GSMS-2026-XXXXXXXX" value={citizenId} onChange={(e) => setCitizenId(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs">Vaccine Type</Label>
+              <select className="w-full h-9 rounded-md border border-input bg-background px-2 text-xs" value={vaccine} onChange={(e) => setVaccine(e.target.value)}>
+                {["BCG", "Hepatitis B", "Pentavalent", "OPV", "IPV", "PCV", "MMR", "COVID-19", "Flu"].map((v) => (
+                  <option key={v} value={v}>{v}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label className="text-xs">Notes</Label>
+              <Input placeholder="Optional notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+            </div>
+          </div>
+          <Button size="sm" className="gap-1" onClick={() => requestMutation.mutate()} disabled={requestMutation.isPending}>
+            <Send className="h-4 w-4" /> Submit Vaccination Request
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="glass-card">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-heading flex items-center gap-2">
+            <Syringe className="h-4 w-4 text-primary" /> Vaccination Schedule (Recent)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {vaccinations.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">No vaccination records.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">Date</TableHead>
+                  <TableHead className="text-xs">Child</TableHead>
+                  <TableHead className="text-xs">Vaccine</TableHead>
+                  <TableHead className="text-xs">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {vaccinations.map((v) => (
+                  <TableRow key={v.id}>
+                    <TableCell className="text-sm">{v.vaccination_date}</TableCell>
+                    <TableCell className="text-sm">{v.child_name}</TableCell>
+                    <TableCell className="text-sm">{v.vaccine}</TableCell>
+                    <TableCell><StatusBadge status={v.status} /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="glass-card">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-heading flex items-center gap-2">
+            <HeartPulse className="h-4 w-4 text-primary" /> Nutrition Program Monitoring
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {nutrition.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">No nutrition records.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">Child</TableHead>
+                  <TableHead className="text-xs">Age</TableHead>
+                  <TableHead className="text-xs">Weight</TableHead>
+                  <TableHead className="text-xs">Height</TableHead>
+                  <TableHead className="text-xs">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {nutrition.map((n) => (
+                  <TableRow key={n.id}>
+                    <TableCell className="text-sm">{n.child_name}</TableCell>
+                    <TableCell className="text-sm">{n.age || "—"}</TableCell>
+                    <TableCell className="text-sm">{n.weight || "—"}</TableCell>
+                    <TableCell className="text-sm">{n.height || "—"}</TableCell>
+                    <TableCell><StatusBadge status={n.status} /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default BhwHealthPrograms;

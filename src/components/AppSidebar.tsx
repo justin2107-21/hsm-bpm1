@@ -15,7 +15,7 @@ import {
   CreditCard,
   FileText,
   MessageSquare,
-  QrCodeScan,
+  ScanLine,
   UserSearch,
   UserPlus,
   Map,
@@ -77,7 +77,7 @@ const bhwSections: NavSection[] = [
   {
     label: "Citizen Assistance",
     items: [
-      { title: "Scan QR Citizen ID", url: "/bhw/citizen-assistance", icon: QrCodeScan },
+      { title: "Scan QR Citizen ID", url: "/bhw/citizen-assistance", icon: ScanLine },
       { title: "Search Citizen", url: "/bhw/citizen-assistance", icon: UserSearch },
       { title: "Register Citizen", url: "/bhw/citizen-assistance", icon: UserPlus },
     ],
@@ -177,7 +177,7 @@ export function AppSidebar() {
       {
         label: "Citizen Services",
         items: [
-          { title: "Scan QR Citizen ID", url: "/staff/scan-qr", icon: QrCodeScan },
+          { title: "Scan QR Citizen ID", url: "/staff/scan-qr", icon: ScanLine },
           { title: "Citizen Registration", url: "/staff/citizen-registration", icon: UserPlus },
           { title: "Citizen Search", url: "/staff/scan-qr", icon: UserSearch },
         ],

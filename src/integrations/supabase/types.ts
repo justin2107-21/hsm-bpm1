@@ -686,8 +686,8 @@ export type Database = {
         | "BSI_User"
         | "Clerk_User"
         | "Captain_User"
-        | "LGUAdmin_User"
         | "SysAdmin_User"
+        | "LGUAdmin_User"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -822,8 +822,8 @@ export const Constants = {
         "BSI_User",
         "Clerk_User",
         "Captain_User",
-        "LGUAdmin_User",
         "SysAdmin_User",
+        "LGUAdmin_User",
       ],
     },
   },

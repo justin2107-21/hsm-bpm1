@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { QrCodeScan, Search, UserPlus } from "lucide-react";
+import { ScanLine, Search, UserPlus } from "lucide-react";
 
 const CitizenAssistance = () => {
   const [qrValue, setQrValue] = useState("");
@@ -47,7 +47,7 @@ const CitizenAssistance = () => {
         <Card className="glass-card">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-heading flex items-center gap-2">
-              <QrCodeScan className="h-4 w-4 text-primary" /> Scan / Enter QR Citizen ID
+              <ScanLine className="h-4 w-4 text-primary" /> Scan / Enter QR Citizen ID
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
