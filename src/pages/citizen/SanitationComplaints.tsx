@@ -31,13 +31,22 @@ const SanitationComplaints = () => {
 
   const addMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("resident_complaints").insert({
+      const { data, error } = await supabase.from("resident_complaints").insert({
         user_id: user!.id,
         complaint_type: form.complaint_type,
         location: form.location,
         description: form.description,
-      });
+      }).select("id").single();
       if (error) throw error;
+      // Also create a routed service request record
+      await supabase.from("service_requests").insert({
+        user_id: user!.id,
+        request_type: "Sanitation Complaint",
+        title: `Sanitation complaint — ${form.complaint_type}`,
+        description: form.description || `Location: ${form.location}`,
+        status: "Submitted",
+        reference_id: data.id,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["citizen_complaints"] });

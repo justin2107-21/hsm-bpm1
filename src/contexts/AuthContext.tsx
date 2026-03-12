@@ -9,6 +9,7 @@ export type UserRole =
   | "BSI_User"
   | "Clerk_User"
   | "Captain_User"
+  | "LGUAdmin_User"
   | "SysAdmin_User";
 
 export const ROLE_LABELS: Record<UserRole, string> = {
@@ -16,8 +17,9 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   BusinessOwner_User: "Business Owner",
   BHW_User: "Barangay Health Worker",
   BSI_User: "Sanitary Inspector",
-  Clerk_User: "Health Office Clerk",
+  Clerk_User: "Health Center Staff",
   Captain_User: "Municipal Health Officer",
+  LGUAdmin_User: "LGU Admin",
   SysAdmin_User: "System Administrator",
 };
 
@@ -45,7 +47,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUserRole = async (userId: string) => {
     const { data } = await supabase.rpc('get_user_role', { _user_id: userId });
     if (data) {
-      setCurrentRole(data as UserRole);
+      // Treat Business Owner accounts as unified Citizen users in the app
+      const mappedRole = data === "BusinessOwner_User" ? "Citizen_User" : (data as UserRole);
+      setCurrentRole(mappedRole);
     }
   };
 

@@ -7,11 +7,11 @@ const corsHeaders = {
 
 const DEMO_USERS = [
   { email: 'resident@demo.com', password: 'demo123456', full_name: 'LeBron James', role: 'Citizen_User' },
-  { email: 'business@demo.com', password: 'demo123456', full_name: 'Stephen Curry', role: 'BusinessOwner_User' },
   { email: 'bhw@demo.com', password: 'demo123456', full_name: 'Uncle Drew', role: 'BHW_User' },
   { email: 'bsi@demo.com', password: 'demo123456', full_name: 'Michael Jordan', role: 'BSI_User' },
   { email: 'clerk@demo.com', password: 'demo123456', full_name: 'Mama Coco', role: 'Clerk_User' },
   { email: 'captain@demo.com', password: 'demo123456', full_name: 'Mr. Long Bomb', role: 'Captain_User' },
+  { email: 'lgu@demo.com', password: 'demo123456', full_name: 'QC LGU Admin', role: 'LGUAdmin_User' },
   { email: 'admin@demo.com', password: 'demo123456', full_name: 'Rasc Binuya', role: 'SysAdmin_User' },
 ]
 

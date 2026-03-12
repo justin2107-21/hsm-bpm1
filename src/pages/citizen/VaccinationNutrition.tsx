@@ -1,13 +1,28 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import StatusBadge from "@/components/StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
-import { Syringe } from "lucide-react";
+import { Syringe, Calendar } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
 const VaccinationNutrition = () => {
   const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    vaccine_type: "",
+    preferred_date: "",
+    preferred_center: "",
+    notes: "",
+  });
+  const queryClient = useQueryClient();
 
   const { data: vaccinations = [] } = useQuery({
     queryKey: ["citizen_vaccinations", user?.id],
@@ -19,6 +34,28 @@ const VaccinationNutrition = () => {
     enabled: !!user,
   });
 
+  const requestMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("service_requests").insert({
+        user_id: user!.id,
+        request_type: "Vaccination Appointment",
+        title: `Vaccination request — ${form.vaccine_type || "Unspecified vaccine"}`,
+        description: `Preferred date: ${form.preferred_date || "Any"}; Preferred health center: ${
+          form.preferred_center || "Any"
+        }${form.notes ? `; Notes: ${form.notes}` : ""}`,
+        status: "Submitted",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["citizen_service_requests", user?.id] });
+      setOpen(false);
+      setForm({ vaccine_type: "", preferred_date: "", preferred_center: "", notes: "" });
+      toast.success("Vaccination appointment request submitted");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const scheduled = vaccinations.filter(v => v.status === "scheduled");
   const completed = vaccinations.filter(v => v.status === "completed");
 
@@ -27,6 +64,67 @@ const VaccinationNutrition = () => {
       <div>
         <h1 className="text-2xl font-bold font-heading">Vaccination & Nutrition</h1>
         <p className="text-sm text-muted-foreground">Track vaccination records and nutrition monitoring</p>
+      </div>
+      <div className="flex flex-col md:flex-row gap-2 md:items-center md:justify-end">
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" className="gap-1">
+              <Syringe className="h-4 w-4" /> Request Vaccination Appointment
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="font-heading text-sm">Request Vaccination Appointment</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-3">
+              <div>
+                <Label className="text-xs">Vaccine Type</Label>
+                <Input
+                  value={form.vaccine_type}
+                  onChange={(e) => setForm({ ...form, vaccine_type: e.target.value })}
+                  placeholder="e.g., Measles, COVID-19"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Preferred Date</Label>
+                  <Input
+                    type="date"
+                    value={form.preferred_date}
+                    onChange={(e) => setForm({ ...form, preferred_date: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Preferred Health Center</Label>
+                  <Input
+                    value={form.preferred_center}
+                    onChange={(e) => setForm({ ...form, preferred_center: e.target.value })}
+                    placeholder="e.g., Barangay Health Center"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Notes (optional)</Label>
+                <Textarea
+                  rows={2}
+                  value={form.notes}
+                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  placeholder="Any additional information for the health center..."
+                />
+              </div>
+              <Button
+                className="w-full"
+                onClick={() => requestMutation.mutate()}
+                disabled={requestMutation.isPending || !form.vaccine_type}
+              >
+                {requestMutation.isPending ? "Submitting..." : "Submit Vaccination Request"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+        <Button variant="outline" size="sm" className="gap-1">
+          <Calendar className="h-4 w-4" /> Vaccination Schedule
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

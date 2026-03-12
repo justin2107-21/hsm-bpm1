@@ -7,11 +7,28 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
 import Dashboard from "@/pages/Dashboard";
 import CitizenDashboard from "@/pages/CitizenDashboard";
+import BhwDashboard from "@/pages/BhwDashboard";
+import HealthCenterDashboard from "@/pages/staff/HealthCenterDashboard";
+import InspectorDashboard from "@/pages/staff/InspectorDashboard";
+import CityHealthOfficerDashboard from "@/pages/staff/CityHealthOfficerDashboard";
+import LguAdminDashboard from "@/pages/staff/LguAdminDashboard";
+import SystemAdminDashboard from "@/pages/staff/SystemAdminDashboard";
 import HealthCenterServices from "@/pages/HealthCenterServices";
 import SanitationPermit from "@/pages/SanitationPermit";
 import ImmunizationTracker from "@/pages/ImmunizationTracker";
 import WastewaterServices from "@/pages/WastewaterServices";
 import HealthSurveillance from "@/pages/HealthSurveillance";
+import CitizenAssistance from "@/pages/bhw/CitizenAssistance";
+import BhwServiceRequests from "@/pages/bhw/ServiceRequests";
+import StaffScanQr from "@/pages/staff/StaffScanQr";
+import StaffRequests from "@/pages/staff/StaffRequests";
+import StaffAssessments from "@/pages/staff/StaffAssessments";
+import StaffPermitVerification from "@/pages/staff/StaffPermitVerification";
+import StaffCitizenRegistration from "@/pages/staff/StaffCitizenRegistration";
+import DiseaseMapDashboard from "@/pages/surveillance/DiseaseMapDashboard";
+import LguRequests from "@/pages/lgu/LguRequests";
+import SystemAdminUsers from "@/pages/sys/SystemAdminUsers";
+import SystemAdminPlaceholder from "@/pages/sys/SystemAdminPlaceholder";
 import SettingsPage from "@/pages/SettingsPage";
 import LoginPage from "@/pages/LoginPage";
 import NotFound from "@/pages/NotFound";
@@ -48,7 +65,18 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 const RoleDashboard = () => {
   const { currentRole } = useAuth();
   const isCitizen = currentRole === "Citizen_User" || currentRole === "BusinessOwner_User";
-  return isCitizen ? <CitizenDashboard /> : <Dashboard />;
+
+  if (isCitizen) return <CitizenDashboard />;
+  if (currentRole === "BHW_User") return <BhwDashboard />;
+  if (currentRole === "Clerk_User") return <HealthCenterDashboard />;
+  if (currentRole === "BSI_User") return <InspectorDashboard />;
+  if (currentRole === "Captain_User") return <CityHealthOfficerDashboard />;
+  if (currentRole === "LGUAdmin_User") return <LguAdminDashboard />;
+  if (currentRole === "SysAdmin_User") return <SystemAdminDashboard />;
+
+  // Clerk_User = Health Center Staff, BSI_User = Sanitation Inspector,
+  // Captain_User = City Health Officer, SysAdmin_User = LGU / System Admin.
+  return <Dashboard />;
 };
 
 const App = () => (
@@ -68,6 +96,25 @@ const App = () => (
               <Route path="/immunization" element={<ImmunizationTracker />} />
               <Route path="/wastewater" element={<WastewaterServices />} />
               <Route path="/surveillance" element={<HealthSurveillance />} />
+              <Route path="/surveillance/map" element={<DiseaseMapDashboard />} />
+              {/* Health Center Staff routes */}
+              <Route path="/staff/scan-qr" element={<StaffScanQr />} />
+              <Route path="/staff/requests" element={<StaffRequests />} />
+              <Route path="/staff/assessments" element={<StaffAssessments />} />
+              <Route path="/staff/permit-verification" element={<StaffPermitVerification />} />
+              <Route path="/staff/citizen-registration" element={<StaffCitizenRegistration />} />
+              {/* BHW routes */}
+              <Route path="/bhw/citizen-assistance" element={<CitizenAssistance />} />
+              <Route path="/bhw/requests" element={<BhwServiceRequests />} />
+              {/* LGU Admin routes */}
+              <Route path="/lgu/requests" element={<LguRequests />} />
+              {/* System Admin routes */}
+              <Route path="/sys/users" element={<SystemAdminUsers />} />
+              <Route path="/sys/logs" element={<SystemAdminPlaceholder title="System Logs" />} />
+              <Route path="/sys/monitoring" element={<SystemAdminPlaceholder title="System Monitoring" />} />
+              <Route path="/sys/database" element={<SystemAdminPlaceholder title="Database Management" />} />
+              <Route path="/sys/integrations" element={<SystemAdminPlaceholder title="Integration Monitoring" />} />
+              <Route path="/sys/requests" element={<SystemAdminPlaceholder title="Requests & Module Performance" />} />
               {/* Citizen routes */}
               <Route path="/citizen/qr" element={<CitizenQR />} />
               <Route path="/citizen/health" element={<HealthServices />} />

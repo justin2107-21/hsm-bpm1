@@ -1,14 +1,21 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import StatusBadge from "@/components/StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { HeartPulse, Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
 const HealthServices = () => {
   const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [concern, setConcern] = useState("");
+  const queryClient = useQueryClient();
 
   const { data: records = [] } = useQuery({
     queryKey: ["citizen_health_records", user?.id],
@@ -20,6 +27,26 @@ const HealthServices = () => {
     enabled: !!user,
   });
 
+  const requestMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("service_requests").insert({
+        user_id: user!.id,
+        request_type: "Health Consultation",
+        title: "Health consultation request",
+        description: concern || "Citizen requested a health consultation.",
+        status: "Submitted",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["citizen_service_requests", user?.id] });
+      setOpen(false);
+      setConcern("");
+      toast.success("Consultation request submitted to your health center");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -27,7 +54,36 @@ const HealthServices = () => {
           <h1 className="text-2xl font-bold font-heading">Health Services</h1>
           <p className="text-sm text-muted-foreground">View your health records and request consultations</p>
         </div>
-        <Button size="sm" className="gap-1"><Plus className="h-4 w-4" /> Request Consultation</Button>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" className="gap-1">
+              <Plus className="h-4 w-4" /> Request Consultation
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="font-heading text-sm">Request Health Consultation</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-3">
+              <div>
+                <Label className="text-xs">Describe your health concern</Label>
+                <Textarea
+                  rows={3}
+                  placeholder="Briefly describe your symptoms or concern..."
+                  value={concern}
+                  onChange={(e) => setConcern(e.target.value)}
+                />
+              </div>
+              <Button
+                className="w-full"
+                onClick={() => requestMutation.mutate()}
+                disabled={requestMutation.isPending}
+              >
+                {requestMutation.isPending ? "Submitting..." : "Submit Consultation Request"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

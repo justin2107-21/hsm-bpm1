@@ -8,12 +8,12 @@ import { Activity, LogIn, Users } from "lucide-react";
 import { toast } from "sonner";
 
 const QUICK_LOGINS: { role: UserRole; email: string; label: string }[] = [
-  { role: "Citizen_User", email: "resident@demo.com", label: "Citizen" },
-  { role: "BusinessOwner_User", email: "business@demo.com", label: "Business Owner" },
-  { role: "BHW_User", email: "bhw@demo.com", label: "BHW" },
-  { role: "BSI_User", email: "bsi@demo.com", label: "Sanitary Inspector" },
-  { role: "Clerk_User", email: "clerk@demo.com", label: "Clerk" },
-  { role: "Captain_User", email: "captain@demo.com", label: "Captain" },
+  { role: "Citizen_User", email: "resident@demo.com", label: "Citizen Portal" },
+  { role: "BHW_User", email: "bhw@demo.com", label: "BHW Portal" },
+  { role: "Clerk_User", email: "clerk@demo.com", label: "Health Center Staff" },
+  { role: "BSI_User", email: "bsi@demo.com", label: "Sanitation Inspector" },
+  { role: "Captain_User", email: "captain@demo.com", label: "City Health Officer" },
+  { role: "LGUAdmin_User", email: "lgu@demo.com", label: "LGU Admin" },
   { role: "SysAdmin_User", email: "admin@demo.com", label: "System Admin" },
 ];
 

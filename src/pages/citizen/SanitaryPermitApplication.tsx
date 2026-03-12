@@ -1,14 +1,26 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import StatusBadge from "@/components/StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { FileCheck, Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 const SanitaryPermitApplication = () => {
   const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    business_name: "",
+    business_type: "",
+    address: "",
+  });
+  const queryClient = useQueryClient();
 
   const { data: permits = [] } = useQuery({
     queryKey: ["citizen_sanitary_permits", user?.id],
@@ -20,6 +32,35 @@ const SanitaryPermitApplication = () => {
     enabled: !!user,
   });
 
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.from("resident_permits").insert({
+        user_id: user!.id,
+        business_name: form.business_name,
+        business_type: form.business_type || null,
+        status: "Submitted",
+      }).select("id").single();
+      if (error) throw error;
+
+      await supabase.from("service_requests").insert({
+        user_id: user!.id,
+        request_type: "Sanitary Permit Application",
+        title: `Sanitary permit — ${form.business_name}`,
+        description: `Business type: ${form.business_type || "N/A"}; Address: ${form.address || "N/A"}`,
+        status: "Submitted",
+        reference_id: data.id,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["citizen_sanitary_permits", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["citizen_requests_summary", user?.id] });
+      setOpen(false);
+      setForm({ business_name: "", business_type: "", address: "" });
+      toast.success("Sanitary permit application submitted");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -27,7 +68,50 @@ const SanitaryPermitApplication = () => {
           <h1 className="text-2xl font-bold font-heading">Sanitary Permit Applications</h1>
           <p className="text-sm text-muted-foreground">Apply for and track sanitary permits</p>
         </div>
-        <Button size="sm" className="gap-1"><Plus className="h-4 w-4" /> Apply for Permit</Button>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" className="gap-1">
+              <Plus className="h-4 w-4" /> Apply for Sanitary Permit
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="font-heading text-sm">New Sanitary Permit Application</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-3">
+              <div>
+                <Label className="text-xs">Business Name</Label>
+                <Input
+                  value={form.business_name}
+                  onChange={(e) => setForm({ ...form, business_name: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Business Type</Label>
+                <Input
+                  value={form.business_type}
+                  onChange={(e) => setForm({ ...form, business_type: e.target.value })}
+                  placeholder="e.g., Food, Retail"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Business Address</Label>
+                <Input
+                  value={form.address}
+                  onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  placeholder="Street, Barangay, City"
+                />
+              </div>
+              <Button
+                className="w-full"
+                onClick={() => addMutation.mutate()}
+                disabled={addMutation.isPending || !form.business_name}
+              >
+                {addMutation.isPending ? "Submitting..." : "Submit Application"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card className="glass-card">

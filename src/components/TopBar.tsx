@@ -1,13 +1,22 @@
-import { useAuth, ROLE_LABELS, type UserRole } from "@/contexts/AuthContext";
+import { useAuth, ROLE_LABELS } from "@/contexts/AuthContext";
 import { Bell, Search, Moon, Sun } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const TopBar = () => {
-  const { currentRole, userName } = useAuth();
+  const { currentRole, userName, signOut } = useAuth();
   const [isDark, setIsDark] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -48,12 +57,44 @@ const TopBar = () => {
           {isDark ? <Sun className="h-4 w-4 text-muted-foreground" /> : <Moon className="h-4 w-4 text-muted-foreground" />}
         </Button>
 
-        <Badge variant="outline" className="text-xs border-primary/30 text-primary hidden lg:inline-flex">
-          {userName || ROLE_LABELS[currentRole]}
-        </Badge>
-        <Badge variant="secondary" className="text-[10px] hidden lg:inline-flex">
-          {ROLE_LABELS[currentRole]}
-        </Badge>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-2 rounded-full border border-border bg-card px-2 py-1 hover:bg-accent transition-colors">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback>
+                  {(userName || ROLE_LABELS[currentRole])
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="hidden md:flex flex-col items-start">
+                <span className="text-xs font-medium truncate max-w-[120px]">
+                  {userName || ROLE_LABELS[currentRole]}
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  {ROLE_LABELS[currentRole]}
+                </span>
+              </div>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuLabel className="text-xs">
+              Signed in as
+              <div className="font-medium truncate">{userName || ROLE_LABELS[currentRole]}</div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => (window.location.href = "/settings")}>
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => signOut()}>
+              Logout
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

@@ -14,7 +14,8 @@ const CitizenDashboard = () => {
   const { user, currentRole, hasEstablishments } = useAuth();
   const navigate = useNavigate();
   const citizenId = `GSMS-2026-${user?.id?.slice(0, 8).toUpperCase() || "00000000"}`;
-  const showBusiness = hasEstablishments || currentRole === "BusinessOwner_User";
+  // Business features are available when the citizen owns at least one establishment
+  const showBusinessSection = hasEstablishments;
 
   const { data: healthRecords = [] } = useQuery({
     queryKey: ["citizen_health_summary", user?.id],
@@ -58,7 +59,7 @@ const CitizenDashboard = () => {
       const { data } = await supabase.from("establishments").select("id, status").eq("user_id", user!.id);
       return data || [];
     },
-    enabled: !!user && showBusiness,
+    enabled: !!user,
   });
 
   const { data: permits = [] } = useQuery({
@@ -67,12 +68,13 @@ const CitizenDashboard = () => {
       const { data } = await supabase.from("resident_permits").select("id, status");
       return data || [];
     },
-    enabled: !!user && showBusiness,
+    enabled: !!user && establishments.length > 0,
   });
 
   const activeRequests = serviceRequests.filter(r => r.status !== "completed").length;
   const pendingComplaints = complaints.filter(c => c.status === "pending").length;
   const pendingPermits = permits.filter(p => p.status === "pending").length;
+  const hasOwnedEstablishments = establishments.length > 0;
 
   return (
     <div className="space-y-6">
@@ -176,8 +178,9 @@ const CitizenDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Business cards - only shown if has establishments or BusinessOwner role */}
-        {showBusiness && (
+        {/* Business cards - only shown based on establishments */}
+        {/* Card 6 — My Establishments (visible if citizen has establishments) */}
+        {hasOwnedEstablishments && (
           <>
             <Card className="glass-card border-primary/20">
               <CardHeader className="pb-3">
@@ -189,12 +192,28 @@ const CitizenDashboard = () => {
                 <p className="text-xs text-muted-foreground">
                   {establishments.length} registered establishment(s)
                 </p>
-                <Button variant="outline" size="sm" className="w-full justify-start gap-1 text-xs" onClick={() => navigate("/citizen/establishments")}>
-                  Manage Establishments <ArrowRight className="h-3 w-3 ml-auto" />
-                </Button>
+                <div className="flex flex-col gap-1.5">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start gap-1 text-xs"
+                    onClick={() => navigate("/citizen/establishments")}
+                  >
+                    Register Establishment <ArrowRight className="h-3 w-3 ml-auto" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start gap-1 text-xs"
+                    onClick={() => navigate("/citizen/establishments")}
+                  >
+                    Manage Establishments <ArrowRight className="h-3 w-3 ml-auto" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
+            {/* Card 7 — Sanitary Permit (only if the user owns an establishment) */}
             <Card className="glass-card border-primary/20">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-heading flex items-center gap-2">
@@ -206,11 +225,12 @@ const CitizenDashboard = () => {
                   {pendingPermits > 0 ? `${pendingPermits} pending application(s)` : "No pending permits"}
                 </p>
                 <Button variant="outline" size="sm" className="w-full justify-start gap-1 text-xs" onClick={() => navigate("/citizen/sanitary-permit")}>
-                  Apply for Permit <ArrowRight className="h-3 w-3 ml-auto" />
+                  Apply for Sanitary Permit <ArrowRight className="h-3 w-3 ml-auto" />
                 </Button>
               </CardContent>
             </Card>
 
+            {/* Card 8 — Inspection Updates (only when inspections exist for user establishments) */}
             <Card className="glass-card border-primary/20">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-heading flex items-center gap-2">
@@ -218,7 +238,9 @@ const CitizenDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <p className="text-xs text-muted-foreground">Check your inspection schedule & results</p>
+                <p className="text-xs text-muted-foreground">
+                  Upcoming inspections and any correction notices for your establishments
+                </p>
                 <Button variant="outline" size="sm" className="w-full justify-start gap-1 text-xs" onClick={() => navigate("/citizen/inspections")}>
                   View Inspection Status <ArrowRight className="h-3 w-3 ml-auto" />
                 </Button>
