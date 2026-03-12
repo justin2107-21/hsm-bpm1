@@ -20,6 +20,10 @@ import WastewaterServices from "@/pages/WastewaterServices";
 import HealthSurveillance from "@/pages/HealthSurveillance";
 import CitizenAssistance from "@/pages/bhw/CitizenAssistance";
 import BhwServiceRequests from "@/pages/bhw/ServiceRequests";
+import BhwHealthPrograms from "@/pages/bhw/HealthPrograms";
+import BhwCommunityReports from "@/pages/bhw/CommunityReports";
+import BhwComplaints from "@/pages/bhw/Complaints";
+import BhwBarangayHealth from "@/pages/bhw/BarangayHealth";
 import StaffScanQr from "@/pages/staff/StaffScanQr";
 import StaffRequests from "@/pages/staff/StaffRequests";
 import StaffAssessments from "@/pages/staff/StaffAssessments";
@@ -27,6 +31,9 @@ import StaffPermitVerification from "@/pages/staff/StaffPermitVerification";
 import StaffCitizenRegistration from "@/pages/staff/StaffCitizenRegistration";
 import DiseaseMapDashboard from "@/pages/surveillance/DiseaseMapDashboard";
 import LguRequests from "@/pages/lgu/LguRequests";
+import LguVaccination from "@/pages/lgu/LguVaccination";
+import LguSanitation from "@/pages/lgu/LguSanitation";
+import LguAnalytics from "@/pages/lgu/LguAnalytics";
 import SystemAdminUsers from "@/pages/sys/SystemAdminUsers";
 import SystemAdminPlaceholder from "@/pages/sys/SystemAdminPlaceholder";
 import SettingsPage from "@/pages/SettingsPage";
@@ -74,8 +81,6 @@ const RoleDashboard = () => {
   if (currentRole === "LGUAdmin_User") return <LguAdminDashboard />;
   if (currentRole === "SysAdmin_User") return <SystemAdminDashboard />;
 
-  // Clerk_User = Health Center Staff, BSI_User = Sanitation Inspector,
-  // Captain_User = City Health Officer, SysAdmin_User = LGU / System Admin.
   return <Dashboard />;
 };
 
@@ -90,7 +95,7 @@ const App = () => (
             <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route path="/" element={<RoleDashboard />} />
-              {/* Staff routes */}
+              {/* Core module routes */}
               <Route path="/health-center" element={<HealthCenterServices />} />
               <Route path="/sanitation-permit" element={<SanitationPermit />} />
               <Route path="/immunization" element={<ImmunizationTracker />} />
@@ -106,8 +111,15 @@ const App = () => (
               {/* BHW routes */}
               <Route path="/bhw/citizen-assistance" element={<CitizenAssistance />} />
               <Route path="/bhw/requests" element={<BhwServiceRequests />} />
+              <Route path="/bhw/health-programs" element={<BhwHealthPrograms />} />
+              <Route path="/bhw/community-reports" element={<BhwCommunityReports />} />
+              <Route path="/bhw/complaints" element={<BhwComplaints />} />
+              <Route path="/bhw/barangay-health" element={<BhwBarangayHealth />} />
               {/* LGU Admin routes */}
               <Route path="/lgu/requests" element={<LguRequests />} />
+              <Route path="/lgu/vaccination" element={<LguVaccination />} />
+              <Route path="/lgu/sanitation" element={<LguSanitation />} />
+              <Route path="/lgu/analytics" element={<LguAnalytics />} />
               {/* System Admin routes */}
               <Route path="/sys/users" element={<SystemAdminUsers />} />
               <Route path="/sys/logs" element={<SystemAdminPlaceholder title="System Logs" />} />
