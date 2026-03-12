@@ -19,7 +19,7 @@ const LguAdminDashboard = () => {
   const { data: cases = [] } = useQuery({
     queryKey: ["lgu_disease_cases"],
     queryFn: async () => {
-      const { data } = await supabase.from("disease_cases").select("case_id, disease_type, status").limit(500);
+      const { data } = await supabase.from("surveillance_cases").select("id, disease, status").limit(500);
       return data || [];
     },
   });

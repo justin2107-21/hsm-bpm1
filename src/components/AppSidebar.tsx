@@ -177,7 +177,7 @@ export function AppSidebar() {
       {
         label: "Citizen Services",
         items: [
-          { title: "Scan QR Citizen ID", url: "/staff/scan-qr", icon: QrCodeScan },
+          { title: "Scan QR Citizen ID", url: "/staff/scan-qr", icon: ScanLine },
           { title: "Citizen Registration", url: "/staff/citizen-registration", icon: UserPlus },
           { title: "Citizen Search", url: "/staff/scan-qr", icon: UserSearch },
         ],
