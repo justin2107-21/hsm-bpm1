@@ -13,7 +13,7 @@ import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { Map as MapIcon, Filter, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import qcBoundaryData from "@/data/quezon-city-boundary.geojson";
+import qcBoundaryData from "@/data/quezon-city-boundary.json";
 
 // Fix default marker icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
