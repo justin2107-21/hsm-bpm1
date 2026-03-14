@@ -75,18 +75,16 @@ const bhwSections: NavSection[] = [
     items: [{ title: "BHW Dashboard", url: "/", icon: LayoutDashboard }],
   },
   {
-    label: "Citizen Assistance",
+    label: "Citizen Service Assistance",
     items: [
-      { title: "Scan QR Citizen ID", url: "/bhw/citizen-assistance", icon: ScanLine },
-      { title: "Search Citizen", url: "/bhw/citizen-assistance", icon: UserSearch },
-      { title: "Register Citizen", url: "/bhw/citizen-assistance", icon: UserPlus },
+      { title: "Citizen Service Assistance", url: "/citizen-service-assistance", icon: ScanLine },
     ],
   },
   {
     label: "Health Programs",
     items: [
-      { title: "Vaccination Requests", url: "/bhw/health-programs", icon: Syringe },
-      { title: "Nutrition Monitoring", url: "/bhw/health-programs", icon: HeartPulse },
+      { title: "Vaccination Requests", url: "/health-programs/vaccination-requests", icon: Syringe },
+      { title: "Nutrition Monitoring", url: "/health-programs/nutrition-monitoring", icon: HeartPulse },
     ],
   },
   {
@@ -99,8 +97,7 @@ const bhwSections: NavSection[] = [
   {
     label: "Service Requests",
     items: [
-      { title: "Assisted Requests", url: "/bhw/requests", icon: FileText },
-      { title: "Request Tracking", url: "/bhw/requests", icon: Search },
+      { title: "ASSISTED REQUEST & TRACKING", url: "/assisted-requests", icon: FileText },
     ],
   },
   {
@@ -221,8 +218,7 @@ export function AppSidebar() {
       {
         label: "Requests Management",
         items: [
-          { title: "Incoming Requests", url: "/staff/requests", icon: FileText },
-          { title: "Request Processing", url: "/staff/requests", icon: Search },
+          { title: "ASSISTED REQUEST & TRACKING", url: "/staff/requests", icon: FileText },
         ],
       },
     ];
@@ -299,7 +295,7 @@ export function AppSidebar() {
         label: "Municipal Overview",
         items: [
           { title: "Real-Time Service Requests", url: "/lgu/requests", icon: FileText },
-          { title: "Disease Cases Map", url: "/surveillance/map", icon: Map },
+          { title: "Disease Mapping Dashboard", url: "/surveillance/map", icon: Map },
           { title: "Vaccination Coverage", url: "/lgu/vaccination", icon: Syringe },
           { title: "Active Inspections", url: "/lgu/sanitation", icon: ClipboardCheck },
           { title: "Establishment Compliance", url: "/lgu/sanitation", icon: Building2 },
@@ -375,7 +371,7 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild>
                       <NavLink
                         to={item.url}
-                        end={item.url === "/"}
+                        end={item.url === "/" || item.url === "/surveillance"}
                         className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
                         activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                       >

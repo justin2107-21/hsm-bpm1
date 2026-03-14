@@ -21,6 +21,8 @@ import HealthSurveillance from "@/pages/HealthSurveillance";
 import CitizenAssistance from "@/pages/bhw/CitizenAssistance";
 import BhwServiceRequests from "@/pages/bhw/ServiceRequests";
 import BhwHealthPrograms from "@/pages/bhw/HealthPrograms";
+import BhwVaccinationRequests from "@/pages/bhw/VaccinationRequests";
+import BhwNutritionMonitoring from "@/pages/bhw/NutritionMonitoring";
 import BhwCommunityReports from "@/pages/bhw/CommunityReports";
 import BhwComplaints from "@/pages/bhw/Complaints";
 import BhwBarangayHealth from "@/pages/bhw/BarangayHealth";
@@ -109,8 +111,13 @@ const App = () => (
               <Route path="/staff/permit-verification" element={<StaffPermitVerification />} />
               <Route path="/staff/citizen-registration" element={<StaffCitizenRegistration />} />
               {/* BHW routes */}
+              <Route path="/citizen-service-assistance" element={<CitizenAssistance />} />
+              {/* Backward compatibility for older links */}
               <Route path="/bhw/citizen-assistance" element={<CitizenAssistance />} />
+              <Route path="/assisted-requests" element={<BhwServiceRequests />} />
               <Route path="/bhw/requests" element={<BhwServiceRequests />} />
+              <Route path="/health-programs/vaccination-requests" element={<BhwVaccinationRequests />} />
+              <Route path="/health-programs/nutrition-monitoring" element={<BhwNutritionMonitoring />} />
               <Route path="/bhw/health-programs" element={<BhwHealthPrograms />} />
               <Route path="/bhw/community-reports" element={<BhwCommunityReports />} />
               <Route path="/bhw/complaints" element={<BhwComplaints />} />

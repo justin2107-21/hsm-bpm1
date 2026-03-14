@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,9 @@ import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
-import { Map, Filter } from "lucide-react";
+import "leaflet.heat";
+import { Map as MapIcon, Filter, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // Fix default marker icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -22,11 +25,12 @@ L.Icon.Default.mergeOptions({
 
 const DISEASE_COLORS: Record<string, string> = {
   Dengue: "#ef4444",
-  "COVID-19": "#3b82f6",
   Tuberculosis: "#f59e0b",
-  Influenza: "#8b5cf6",
   Measles: "#ec4899",
-  Cholera: "#14b8a6",
+  Leptospirosis: "#22c55e",
+  Rabies: "#3b82f6",
+  "Foodborne Illness": "#a855f7",
+  "Influenza-Like Illness": "#0ea5e9",
 };
 
 const getColor = (disease: string) => DISEASE_COLORS[disease] || "#6b7280";
@@ -64,13 +68,23 @@ interface DiseaseCase {
   case_count: number;
 }
 
+type HotspotKey = string; // `${barangay}__${disease}`
+
+interface HotspotSummary {
+  barangay: string;
+  disease: string;
+  casesInWindow: number;
+}
+
 const DiseaseMapDashboard = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
+  const heatLayerRef = useRef<L.Layer | null>(null);
+
+  const [activeDiseases, setActiveDiseases] = useState<string[]>([]);
 
   const [filterBarangay, setFilterBarangay] = useState("");
-  const [filterDisease, setFilterDisease] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -86,33 +100,114 @@ const DiseaseMapDashboard = () => {
       if (error) throw error;
       return (data || []) as DiseaseCase[];
     },
+    refetchInterval: 15000,
   });
 
-  const diseases = useMemo(() => [...new Set(cases.map((c) => c.disease))], [cases]);
+  const diseases = useMemo(
+    () => [...new Set(cases.map((c) => c.disease))].filter(Boolean),
+    [cases],
+  );
   const barangays = useMemo(
     () => [...new Set(cases.map((c) => c.patient_location).filter(Boolean))],
-    [cases]
+    [cases],
   );
   const statuses = useMemo(() => [...new Set(cases.map((c) => c.status))], [cases]);
+
+  // Initialize active diseases on first load
+  useEffect(() => {
+    if (activeDiseases.length === 0 && diseases.length > 0) {
+      setActiveDiseases(diseases);
+    }
+  }, [diseases, activeDiseases.length]);
 
   const filtered = useMemo(() => {
     return cases.filter((c) => {
       if (filterBarangay && c.patient_location !== filterBarangay) return false;
-      if (filterDisease && c.disease !== filterDisease) return false;
+      if (activeDiseases.length > 0 && !activeDiseases.includes(c.disease)) return false;
       if (filterStatus && c.status !== filterStatus) return false;
       if (dateFrom && c.case_date < dateFrom) return false;
       if (dateTo && c.case_date > dateTo) return false;
       return true;
     });
-  }, [cases, filterBarangay, filterDisease, filterStatus, dateFrom, dateTo]);
+  }, [cases, filterBarangay, activeDiseases, filterStatus, dateFrom, dateTo]);
+
+  // Summary stats and hotspot detection (7-day window)
+  const {
+    totalCases,
+    casesThisWeek,
+    activeCases,
+    hotspotSummaries,
+  }: {
+    totalCases: number;
+    casesThisWeek: number;
+    activeCases: number;
+    hotspotSummaries: HotspotSummary[];
+  } = useMemo(() => {
+    const now = new Date();
+    const weekAgo = new Date(now);
+    weekAgo.setDate(now.getDate() - 7);
+
+    let total = cases.reduce((sum, c) => sum + (c.case_count || 0), 0);
+    let weekCount = 0;
+    let activeCount = 0;
+
+    const bucket = new globalThis.Map<HotspotKey, number>();
+
+    for (const c of cases) {
+      const reported = new Date(c.case_date);
+      if (!isNaN(reported.getTime()) && reported >= weekAgo && reported <= now) {
+        weekCount += c.case_count || 0;
+        if (c.patient_location) {
+          const key: HotspotKey = `${c.patient_location}__${c.disease}`;
+          bucket.set(key, (bucket.get(key) || 0) + (c.case_count || 0));
+        }
+      }
+
+      if (!["Resolved", "Completed", "Certificate Issued", "Approved"].includes(c.status)) {
+        activeCount++;
+      }
+    }
+
+    const hotspots: HotspotSummary[] = [];
+    bucket.forEach((count, key) => {
+      if (count >= 5) {
+        const [barangay, disease] = key.split("__");
+        hotspots.push({ barangay, disease, casesInWindow: count });
+      }
+    });
+
+    return {
+      totalCases: total,
+      casesThisWeek: weekCount,
+      activeCases: activeCount,
+      hotspotSummaries: hotspots,
+    };
+  }, [cases]);
 
   // Initialize map
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
-    const map = L.map(mapRef.current).setView([14.676, 121.0437], 12);
+    const map = L.map(mapRef.current, {
+      minZoom: 11,
+      maxZoom: 18,
+    }).setView([14.676, 121.0437], 12);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map);
+
+    // Simple Quezon City boundary rectangle (tight to the city extent)
+    L.rectangle(
+      [
+        [14.78, 120.98],
+        [14.58, 121.14],
+      ],
+      {
+        color: "#22c55e",
+        weight: 2,
+        fillOpacity: 0,
+      },
+    ).addTo(map);
+
     mapInstanceRef.current = map;
 
     return () => {
@@ -121,25 +216,37 @@ const DiseaseMapDashboard = () => {
     };
   }, []);
 
-  // Update markers
+  // Update markers and heatmap layer
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
 
+    // Remove previous marker cluster
     if (clusterRef.current) {
       map.removeLayer(clusterRef.current);
+    }
+    // Remove previous heat layer
+    if (heatLayerRef.current) {
+      map.removeLayer(heatLayerRef.current);
+      heatLayerRef.current = null;
     }
 
     const cluster = (L as any).markerClusterGroup();
     clusterRef.current = cluster;
 
+    const heatPoints: [number, number, number][] = [];
+
     filtered.forEach((c) => {
       const loc = c.patient_location || "";
-      const coords = BARANGAY_COORDS[loc];
+      const coords = loc ? BARANGAY_COORDS[loc] : undefined;
       if (!coords) return;
-      // Add slight jitter to avoid overlapping markers
-      const lat = coords[0] + (Math.random() - 0.5) * 0.005;
-      const lng = coords[1] + (Math.random() - 0.5) * 0.005;
+
+      let lat = coords[0];
+      let lng = coords[1];
+
+      // Collect points for heatmap (weight by case_count)
+      const weight = Math.max(1, c.case_count || 1);
+      heatPoints.push([lat, lng, weight]);
 
       const marker = L.marker([lat, lng], { icon: createIcon(getColor(c.disease)) });
       marker.bindPopup(
@@ -149,34 +256,108 @@ const DiseaseMapDashboard = () => {
           <b>Status:</b> ${c.status}<br/>
           <b>Date:</b> ${c.case_date}<br/>
           <b>Cases:</b> ${c.case_count}
-        </div>`
+        </div>`,
       );
       cluster.addLayer(marker);
     });
 
     map.addLayer(cluster);
+
+    if (heatPoints.length > 0) {
+      const heat = (L as any).heatLayer(heatPoints, {
+        radius: 25,
+        blur: 18,
+        maxZoom: 17,
+        // Colors approximate: green (low) -> yellow -> orange -> red (high)
+        gradient: {
+          0.1: "#22c55e",
+          0.4: "#eab308",
+          0.7: "#f97316",
+          1.0: "#ef4444",
+        },
+      });
+      heat.addTo(map);
+      heatLayerRef.current = heat;
+    }
   }, [filtered]);
 
   const clearFilters = () => {
     setFilterBarangay("");
-    setFilterDisease("");
+    setActiveDiseases(diseases);
     setFilterStatus("");
     setDateFrom("");
     setDateTo("");
   };
 
+  const toggleDisease = (disease: string) => {
+    setActiveDiseases((prev) =>
+      prev.includes(disease) ? prev.filter((d) => d !== disease) : [...prev, disease],
+    );
+  };
+
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold font-heading flex items-center gap-2">
-          <Map className="h-6 w-6 text-primary" /> Health Surveillance Map
-        </h1>
+      <div className="space-y-2">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+          <h1 className="text-2xl font-bold font-heading flex items-center gap-2">
+            <MapIcon className="h-6 w-6 text-primary" /> Disease Surveillance Mapping
+          </h1>
+          {hotspotSummaries.length > 0 && (
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/60 bg-amber-50 px-3 py-1 text-xs text-amber-900 dark:bg-amber-500/15 dark:text-amber-50 dark:border-amber-400/60">
+              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+              <span className="font-semibold tracking-wide">HOTSPOT ALERT</span>
+              <span>· {hotspotSummaries.length} active hotspot barangay/disease clusters</span>
+            </div>
+          )}
+        </div>
         <p className="text-sm text-muted-foreground">
-          Interactive disease case mapping for Quezon City — {filtered.length} cases displayed
+          Real-time disease case mapping focused on Quezon City with barangay-level hotspot detection.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+      {/* Map full-width */}
+      <Card className="glass-card">
+        <CardContent className="p-0">
+          <div ref={mapRef} className="w-full h-[520px] rounded-lg" />
+        </CardContent>
+      </Card>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <Card className="glass-card border border-primary/10">
+          <CardContent className="py-3 px-3">
+            <p className="text-[11px] text-muted-foreground mb-1">Total Disease Cases</p>
+            <p className="text-xl font-semibold font-heading">{totalCases}</p>
+          </CardContent>
+        </Card>
+        <Card className="glass-card border border-sky-400/20">
+          <CardContent className="py-3 px-3">
+            <p className="text-[11px] text-muted-foreground mb-1">Cases This Week</p>
+            <p className="text-xl font-semibold font-heading text-sky-600 dark:text-sky-300">
+              {casesThisWeek}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="glass-card border border-emerald-400/20">
+          <CardContent className="py-3 px-3">
+            <p className="text-[11px] text-muted-foreground mb-1">Active Cases</p>
+            <p className="text-xl font-semibold font-heading text-emerald-600 dark:text-emerald-300">
+              {activeCases}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="glass-card border border-rose-400/20">
+          <CardContent className="py-3 px-3">
+            <p className="text-[11px] text-muted-foreground mb-1">Hotspot Barangays</p>
+            <p className="text-xl font-semibold font-heading text-rose-600 dark:text-rose-300">
+              {hotspotSummaries.length}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters + case list below map */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Filters */}
         <Card className="glass-card lg:col-span-1">
           <CardHeader className="pb-3">
@@ -199,19 +380,6 @@ const DiseaseMapDashboard = () => {
               </select>
             </div>
             <div>
-              <Label className="text-xs">Disease Type</Label>
-              <select
-                className="w-full h-8 rounded-md border border-input bg-background px-2 text-xs"
-                value={filterDisease}
-                onChange={(e) => setFilterDisease(e.target.value)}
-              >
-                <option value="">All Diseases</option>
-                {diseases.map((d) => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-            </div>
-            <div>
               <Label className="text-xs">Status</Label>
               <select
                 className="w-full h-8 rounded-md border border-input bg-background px-2 text-xs"
@@ -220,7 +388,9 @@ const DiseaseMapDashboard = () => {
               >
                 <option value="">All Statuses</option>
                 {statuses.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))}
               </select>
             </div>
@@ -238,59 +408,120 @@ const DiseaseMapDashboard = () => {
 
             {/* Legend */}
             <div className="pt-2 border-t border-border">
-              <p className="text-[11px] font-semibold text-muted-foreground mb-2">Legend</p>
-              <div className="space-y-1">
-                {Object.entries(DISEASE_COLORS).map(([disease, color]) => (
-                  <div key={disease} className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full border border-white shadow-sm" style={{ background: color }} />
-                    <span className="text-[11px]">{disease}</span>
-                  </div>
-                ))}
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full border border-white shadow-sm bg-gray-500" />
-                  <span className="text-[11px]">Other</span>
-                </div>
+              <p className="text-[11px] font-semibold text-muted-foreground mb-2">Disease Legend</p>
+              <div className="flex flex-wrap gap-1.5">
+                {Object.entries(DISEASE_COLORS).map(([disease, color]) => {
+                  const isActive = activeDiseases.includes(disease);
+                  return (
+                    <button
+                      key={disease}
+                      type="button"
+                      onClick={() => toggleDisease(disease)}
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition-colors",
+                        isActive
+                          ? "bg-background text-foreground border-border"
+                          : "bg-muted/60 text-muted-foreground border-transparent opacity-70",
+                      )}
+                    >
+                      <span
+                        className="w-3 h-3 rounded-full border border-white shadow-sm"
+                        style={{ background: color }}
+                      />
+                      <span className="truncate max-w-[96px]">{disease}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Map */}
-        <div className="lg:col-span-3 space-y-4">
-          <Card className="glass-card">
-            <CardContent className="p-0">
-              <div ref={mapRef} className="w-full h-[500px] rounded-lg" />
-            </CardContent>
-          </Card>
-
-          {/* Case list sidebar */}
-          <Card className="glass-card">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-heading">Cases on Map ({filtered.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="max-h-60 overflow-y-auto space-y-2">
-                {filtered.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">No cases match current filters.</p>
-                ) : (
-                  filtered.slice(0, 50).map((c) => (
-                    <div key={c.id} className="p-2 rounded-lg border border-border bg-muted/20 flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full shrink-0" style={{ background: getColor(c.disease) }} />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium truncate">{c.disease}</p>
-                        <p className="text-[11px] text-muted-foreground truncate">
-                          {c.patient_location || "Unknown"} · {c.case_date} · {c.status}
-                        </p>
-                      </div>
-                      <span className="text-[11px] text-muted-foreground shrink-0">{c.case_count} case(s)</span>
+        {/* Case list */}
+        <Card className="glass-card lg:col-span-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-heading">Cases on Map ({filtered.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {filtered.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No cases match current filters.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+                {filtered.map((c) => (
+                  <div
+                    key={c.id}
+                    className="p-2 rounded-lg border border-border bg-muted/20 flex items-center gap-3"
+                  >
+                    <div className="w-3 h-3 rounded-full shrink-0" style={{ background: getColor(c.disease) }} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium truncate">{c.disease}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {c.patient_location || "Unknown"} · {c.case_date} · {c.status}
+                      </p>
                     </div>
-                  ))
-                )}
+                    <span className="text-[11px] text-muted-foreground shrink-0">
+                      {c.case_count} case{c.case_count === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                ))}
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Hotspot detection table */}
+      <Card className="glass-card">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-heading flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-rose-500" /> Hotspot Detection
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {hotspotSummaries.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No barangays currently meet the hotspot criteria (5+ cases of the same disease within 7 days).
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs">Barangay</TableHead>
+                    <TableHead className="text-xs">Disease</TableHead>
+                    <TableHead className="text-xs">Cases in last 7 days</TableHead>
+                    <TableHead className="text-xs">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {hotspotSummaries.map((h) => (
+                    <TableRow
+                      key={`${h.barangay}-${h.disease}`}
+                      className="cursor-pointer hover:bg-muted/60"
+                      onClick={() => {
+                        const map = mapInstanceRef.current;
+                        const coords = BARANGAY_COORDS[h.barangay];
+                        if (map && coords) {
+                          map.setView([coords[0], coords[1]], 14);
+                        }
+                      }}
+                    >
+                      <TableCell className="text-sm">{h.barangay}</TableCell>
+                      <TableCell className="text-sm">{h.disease}</TableCell>
+                      <TableCell className="text-sm">{h.casesInWindow}</TableCell>
+                      <TableCell className="text-xs font-semibold text-rose-600 dark:text-rose-300">
+                        HOTSPOT
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

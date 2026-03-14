@@ -8,7 +8,90 @@ const CitizenQR = () => {
   const { user, userName } = useAuth();
   const citizenId = `GSMS-2026-${user?.id?.slice(0, 8).toUpperCase() || "UNKNOWN"}`;
 
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    const svg = document.getElementById("citizen-qr-svg") as SVGSVGElement | null;
+    const qrMarkup = svg ? svg.outerHTML : "";
+
+    const printWindow = window.open("", "_blank", "noopener,noreferrer,width=480,height=640");
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>My QR Citizen ID</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+              font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+              background: #f3f4f6;
+              color: #111827;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+            }
+            .wrapper {
+              text-align: center;
+              padding: 24px 20px;
+            }
+            .title {
+              font-size: 14px;
+              font-weight: 600;
+              letter-spacing: 0.06em;
+              text-transform: uppercase;
+              margin-bottom: 12px;
+            }
+            .id-label {
+              font-size: 11px;
+              color: #6b7280;
+              margin-top: 12px;
+            }
+            .id-value {
+              font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+              font-size: 13px;
+              font-weight: 600;
+              margin-top: 4px;
+            }
+            .qr-frame {
+              display: inline-flex;
+              padding: 16px;
+              border-radius: 16px;
+              border: 1px solid #e5e7eb;
+              background: #ffffff;
+              box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+            }
+            svg {
+              width: 200px;
+              height: 200px;
+            }
+            @media print {
+              body {
+                background: #ffffff;
+                min-height: auto;
+              }
+              .wrapper {
+                box-shadow: none;
+                padding: 0;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="wrapper">
+            <div class="title">MY QR CITIZEN ID</div>
+            <div class="qr-frame">
+              ${qrMarkup}
+            </div>
+            <div class="id-label">Citizen ID</div>
+            <div class="id-value">${citizenId}</div>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
 
   return (
     <div className="space-y-6">
@@ -24,7 +107,7 @@ const CitizenQR = () => {
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-4">
             <div className="p-4 bg-card rounded-xl border border-border">
-              <QRCodeSVG value={citizenId} size={180} level="H" />
+              <QRCodeSVG id="citizen-qr-svg" value={citizenId} size={180} level="H" />
             </div>
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Citizen ID</p>
