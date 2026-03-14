@@ -261,7 +261,6 @@ export function AppSidebar() {
       {
         label: "Sanitation Permit Authority",
         items: [
-          { title: "Permit Approval", url: "/sanitation-permit", icon: ClipboardCheck },
           { title: "Permit Applications", url: "/sanitation-permit", icon: FileCheck },
           { title: "Inspection Reports", url: "/citizen/inspections", icon: Search },
         ],
@@ -276,15 +275,13 @@ export function AppSidebar() {
       {
         label: "Vaccination & Immunization",
         items: [
-          { title: "Vaccination Coverage", url: "/immunization", icon: Syringe },
-          { title: "Immunization Reports", url: "/immunization", icon: BarChart3 },
+          { title: "Vaccination & Immunization", url: "/immunization", icon: Syringe },
         ],
       },
       {
         label: "Health Center Operations",
         items: [
-          { title: "Consultation Statistics", url: "/health-center", icon: Stethoscope },
-          { title: "Health Service Reports", url: "/health-center", icon: FileText },
+          { title: "Health Center Reports", url: "/health-center", icon: Stethoscope },
         ],
       },
     ];
