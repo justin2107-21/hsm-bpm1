@@ -12,6 +12,7 @@ import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import "leaflet.heat";
+import * as turf from "@turf/turf";
 import { Map as MapIcon, Filter, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -58,6 +59,25 @@ const BARANGAY_COORDS: Record<string, [number, number]> = {
   "Kamuning": [14.6316, 121.0437],
   "Project 6": [14.6512, 121.0396],
 };
+
+// Approximate Quezon City boundary polygon (lon, lat) for masking
+const QC_BOUNDARY_COORDS: [number, number][] = [
+  [121.0205, 14.7625],
+  [121.104, 14.754],
+  [121.143, 14.720],
+  [121.150, 14.690],
+  [121.142, 14.655],
+  [121.123, 14.628],
+  [121.095, 14.605],
+  [121.060, 14.590],
+  [121.020, 14.585],
+  [120.990, 14.600],
+  [120.970, 14.640],
+  [120.965, 14.680],
+  [120.975, 14.715],
+  [121.000, 14.745],
+  [121.0205, 14.7625],
+];
 
 interface DiseaseCase {
   id: string;
@@ -137,11 +157,13 @@ const DiseaseMapDashboard = () => {
     casesThisWeek,
     activeCases,
     hotspotSummaries,
+    hotspotBarangays,
   }: {
     totalCases: number;
     casesThisWeek: number;
     activeCases: number;
     hotspotSummaries: HotspotSummary[];
+    hotspotBarangays: number;
   } = useMemo(() => {
     const now = new Date();
     const weekAgo = new Date(now);
@@ -150,6 +172,7 @@ const DiseaseMapDashboard = () => {
     let total = cases.reduce((sum, c) => sum + (c.case_count || 0), 0);
     let weekCount = 0;
     let activeCount = 0;
+    let hotspotBarangays = 0;
 
     const bucket = new globalThis.Map<HotspotKey, number>();
 
@@ -170,9 +193,10 @@ const DiseaseMapDashboard = () => {
 
     const hotspots: HotspotSummary[] = [];
     bucket.forEach((count, key) => {
-      if (count >= 5) {
+      if (count > 0) {
         const [barangay, disease] = key.split("__");
         hotspots.push({ barangay, disease, casesInWindow: count });
+        if (count >= 5) hotspotBarangays++;
       }
     });
 
@@ -180,7 +204,8 @@ const DiseaseMapDashboard = () => {
       totalCases: total,
       casesThisWeek: weekCount,
       activeCases: activeCount,
-      hotspotSummaries: hotspots,
+        hotspotSummaries: hotspots,
+        hotspotBarangays,
     };
   }, [cases]);
 
@@ -195,18 +220,45 @@ const DiseaseMapDashboard = () => {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map);
 
-    // Simple Quezon City boundary rectangle (tight to the city extent)
-    L.rectangle(
+    // Build world mask minus Quezon City polygon
+    const world = turf.polygon([
       [
-        [14.78, 120.98],
-        [14.58, 121.14],
+        [-180, -90],
+        [180, -90],
+        [180, 90],
+        [-180, 90],
+        [-180, -90],
       ],
-      {
+    ]);
+    const qcPoly = turf.polygon([QC_BOUNDARY_COORDS]);
+    let maskGeom: unknown = null;
+    try {
+      // @turf/turf v7+ expects a FeatureCollection for difference()
+      maskGeom = (turf as any).difference(turf.featureCollection([world, qcPoly]));
+    } catch {
+      // If masking fails (invalid polygon, turf version mismatch, etc.), don't crash the page.
+      maskGeom = null;
+    }
+
+    if (maskGeom) {
+      L.geoJSON(maskGeom as any, {
+        style: {
+          color: "transparent",
+          fillColor: "#020617",
+          fillOpacity: 0.55,
+        },
+        interactive: false,
+      }).addTo(map);
+    }
+
+    // Draw Quezon City boundary outline
+    L.geoJSON(qcPoly as any, {
+      style: {
         color: "#22c55e",
         weight: 2,
         fillOpacity: 0,
       },
-    ).addTo(map);
+    }).addTo(map);
 
     mapInstanceRef.current = map;
 
@@ -350,7 +402,7 @@ const DiseaseMapDashboard = () => {
           <CardContent className="py-3 px-3">
             <p className="text-[11px] text-muted-foreground mb-1">Hotspot Barangays</p>
             <p className="text-xl font-semibold font-heading text-rose-600 dark:text-rose-300">
-              {hotspotSummaries.length}
+              {hotspotBarangays}
             </p>
           </CardContent>
         </Card>
@@ -410,28 +462,31 @@ const DiseaseMapDashboard = () => {
             <div className="pt-2 border-t border-border">
               <p className="text-[11px] font-semibold text-muted-foreground mb-2">Disease Legend</p>
               <div className="flex flex-wrap gap-1.5">
-                {Object.entries(DISEASE_COLORS).map(([disease, color]) => {
-                  const isActive = activeDiseases.includes(disease);
-                  return (
-                    <button
-                      key={disease}
-                      type="button"
-                      onClick={() => toggleDisease(disease)}
-                      className={cn(
-                        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition-colors",
-                        isActive
-                          ? "bg-background text-foreground border-border"
-                          : "bg-muted/60 text-muted-foreground border-transparent opacity-70",
-                      )}
-                    >
-                      <span
-                        className="w-3 h-3 rounded-full border border-white shadow-sm"
-                        style={{ background: color }}
-                      />
-                      <span className="truncate max-w-[96px]">{disease}</span>
-                    </button>
-                  );
-                })}
+                {diseases
+                  .filter((d) => d && d !== "COVID-19")
+                  .map((disease) => {
+                    const color = getColor(disease);
+                    const isActive = activeDiseases.includes(disease);
+                    return (
+                      <button
+                        key={disease}
+                        type="button"
+                        onClick={() => toggleDisease(disease)}
+                        className={cn(
+                          "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition-colors",
+                          isActive
+                            ? "bg-background text-foreground border-border"
+                            : "bg-muted/60 text-muted-foreground border-transparent opacity-70",
+                        )}
+                      >
+                        <span
+                          className="w-3 h-3 rounded-full border border-white shadow-sm"
+                          style={{ background: color }}
+                        />
+                        <span className="truncate max-w-[96px]">{disease}</span>
+                      </button>
+                    );
+                  })}
               </div>
             </div>
           </CardContent>
@@ -476,48 +531,79 @@ const DiseaseMapDashboard = () => {
       <Card className="glass-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-heading flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-rose-500" /> Hotspot Detection
+            <AlertTriangle className="h-4 w-4 text-rose-500" /> Hotspot & Cluster Detection
           </CardTitle>
         </CardHeader>
         <CardContent>
           {hotspotSummaries.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
-              No barangays currently meet the hotspot criteria (5+ cases of the same disease within 7 days).
+              No barangays currently have reported clusters in the last 7 days.
             </p>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">Barangay</TableHead>
-                    <TableHead className="text-xs">Disease</TableHead>
-                    <TableHead className="text-xs">Cases in last 7 days</TableHead>
-                    <TableHead className="text-xs">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {hotspotSummaries.map((h) => (
-                    <TableRow
-                      key={`${h.barangay}-${h.disease}`}
-                      className="cursor-pointer hover:bg-muted/60"
-                      onClick={() => {
-                        const map = mapInstanceRef.current;
-                        const coords = BARANGAY_COORDS[h.barangay];
-                        if (map && coords) {
-                          map.setView([coords[0], coords[1]], 14);
-                        }
-                      }}
-                    >
-                      <TableCell className="text-sm">{h.barangay}</TableCell>
-                      <TableCell className="text-sm">{h.disease}</TableCell>
-                      <TableCell className="text-sm">{h.casesInWindow}</TableCell>
-                      <TableCell className="text-xs font-semibold text-rose-600 dark:text-rose-300">
-                        HOTSPOT
-                      </TableCell>
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+                <span className="font-semibold uppercase tracking-wide">Hotspot Legend</span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Hotspot (5+ cases / 7 days)
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-2.5 h-2.5 rounded-full bg-yellow-400" /> Moderate (3–4 cases / 7 days)
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-2.5 h-2.5 rounded-full bg-green-500" /> Resolved / Low (1–2 cases / 7 days)
+                </span>
+              </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">Barangay</TableHead>
+                      <TableHead className="text-xs">Disease</TableHead>
+                      <TableHead className="text-xs">Cases in last 7 days</TableHead>
+                      <TableHead className="text-xs">Status</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {hotspotSummaries
+                      .sort((a, b) => b.casesInWindow - a.casesInWindow)
+                      .map((h) => {
+                        let label = "Resolved";
+                        let className = "text-green-600 dark:text-green-300";
+                        let dotClass = "bg-green-500";
+                        if (h.casesInWindow >= 5) {
+                          label = "Hotspot";
+                          className = "text-red-600 dark:text-red-400";
+                          dotClass = "bg-red-500";
+                        } else if (h.casesInWindow >= 3) {
+                          label = "Moderate";
+                          className = "text-yellow-600 dark:text-yellow-300";
+                          dotClass = "bg-yellow-400";
+                        }
+                        return (
+                          <TableRow
+                            key={`${h.barangay}-${h.disease}`}
+                            className="cursor-pointer hover:bg-muted/60"
+                            onClick={() => {
+                              const map = mapInstanceRef.current;
+                              const coords = BARANGAY_COORDS[h.barangay];
+                              if (map && coords) {
+                                map.setView([coords[0], coords[1]], 14);
+                              }
+                            }}
+                          >
+                            <TableCell className="text-sm">{h.barangay}</TableCell>
+                            <TableCell className="text-sm">{h.disease}</TableCell>
+                            <TableCell className="text-sm">{h.casesInWindow}</TableCell>
+                            <TableCell className={cn("text-xs font-semibold flex items-center gap-1", className)}>
+                              <span className={cn("w-2.5 h-2.5 rounded-full", dotClass)} />
+                              {label}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           )}
         </CardContent>
