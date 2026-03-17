@@ -45,6 +45,7 @@ import NotFound from "@/pages/NotFound";
 // Citizen pages
 import CitizenQR from "@/pages/citizen/CitizenQR";
 import HealthServices from "@/pages/citizen/HealthServices";
+import HealthServicesHub from "@/pages/citizen/HealthServicesHub";
 import VaccinationNutrition from "@/pages/citizen/VaccinationNutrition";
 import DiseaseReporting from "@/pages/citizen/DiseaseReporting";
 import SanitationComplaints from "@/pages/citizen/SanitationComplaints";
@@ -150,7 +151,7 @@ const App = () => (
               <Route path="/sys/requests" element={<SystemAdminPlaceholder title="Requests & Module Performance" />} />
               {/* Citizen routes */}
               <Route path="/citizen/qr" element={<CitizenQR />} />
-              <Route path="/citizen/health" element={<HealthServices />} />
+              <Route path="/citizen/health" element={<HealthServicesHub />} />
               <Route path="/citizen/vaccination" element={<VaccinationNutrition />} />
               <Route path="/citizen/disease-reporting" element={<DiseaseReporting />} />
               <Route path="/citizen/sanitation-complaints" element={<SanitationComplaints />} />
