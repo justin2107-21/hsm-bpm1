@@ -5,13 +5,15 @@ import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
 import {
   QrCode, HeartPulse, Syringe, FileText, MessageSquare,
-  Building2, FileCheck, Search, ArrowRight,
+  Building2, FileCheck, Search, Activity, Calendar, Clock,
+  TrendingUp, Users, Shield, AlertCircle
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
 
 const CitizenDashboard = () => {
-  const { user, currentRole, hasEstablishments } = useAuth();
+  const { user, currentRole, hasEstablishments, userName } = useAuth();
   const navigate = useNavigate();
   const citizenId = `GSMS-2026-${user?.id?.slice(0, 8).toUpperCase() || "00000000"}`;
   // Business features are available when the citizen owns at least one establishment
@@ -38,7 +40,7 @@ const CitizenDashboard = () => {
   const { data: serviceRequests = [] } = useQuery({
     queryKey: ["citizen_requests_summary", user?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("service_requests").select("id, status").eq("user_id", user!.id);
+      const { data } = await supabase.from("service_requests").select("id, status, created_at, title").eq("user_id", user!.id).order("created_at", { ascending: false });
       return data || [];
     },
     enabled: !!user,
@@ -47,7 +49,16 @@ const CitizenDashboard = () => {
   const { data: complaints = [] } = useQuery({
     queryKey: ["citizen_complaints_summary", user?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("resident_complaints").select("id, status");
+      const { data } = await supabase.from("sanitation_complaints").select("id, status, created_at, complaint_type").eq("user_id", user!.id).order("created_at", { ascending: false });
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
+  const { data: vaccinationSchedules = [] } = useQuery({
+    queryKey: ["citizen_vax_schedules", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from("vaccination_schedules").select("id, vaccine_name, scheduled_date, status").eq("user_id", user!.id).order("scheduled_date", { ascending: false }).limit(3);
       return data || [];
     },
     enabled: !!user,
@@ -71,183 +82,140 @@ const CitizenDashboard = () => {
     enabled: !!user && establishments.length > 0,
   });
 
-  const activeRequests = serviceRequests.filter(r => r.status !== "completed").length;
-  const pendingComplaints = complaints.filter(c => c.status === "pending").length;
+  const activeRequests = serviceRequests.filter(r => r.status !== "completed" && r.status !== "Completed").length;
+  const pendingComplaints = complaints.filter(c => c.status === "pending" || c.status === "Pending").length;
   const pendingPermits = permits.filter(p => p.status === "pending").length;
   const hasOwnedEstablishments = establishments.length > 0;
 
+  // Get recent activity (last 5 items from all sources)
+  const recentActivity = [
+    ...serviceRequests.slice(0, 3).map(item => ({ ...item, type: 'service_request', date: item.created_at })),
+    ...complaints.slice(0, 2).map(item => ({ ...item, type: 'complaint', date: item.created_at })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold font-heading">Citizen Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Welcome back! Here's a quick overview of your services.</p>
+    <div className="space-y-8">
+      {/* Welcome Section */}
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold font-heading">
+          Welcome back, {userName?.split(' ')[0] || 'Citizen'}! 👋
+        </h1>
+        <p className="text-muted-foreground">
+          Here's your health and sanitation services overview for today.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* QR Citizen ID */}
-        <Card className="glass-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-heading flex items-center gap-2">
-              <QrCode className="h-4 w-4 text-primary" /> My QR Citizen ID
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center gap-3">
-            <div className="p-2 bg-card rounded-lg border border-border">
-              <QRCodeSVG value={citizenId} size={80} level="H" />
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="text-center p-4">
+          <div className="flex items-center justify-center mb-2">
+            <FileText className="h-6 w-6 text-blue-500" />
+          </div>
+          <div className="text-2xl font-bold">{serviceRequests.length}</div>
+          <div className="text-xs text-muted-foreground">Total Requests</div>
+        </Card>
+        <Card className="text-center p-4">
+          <div className="flex items-center justify-center mb-2">
+            <AlertCircle className="h-6 w-6 text-orange-500" />
+          </div>
+          <div className="text-2xl font-bold">{pendingComplaints}</div>
+          <div className="text-xs text-muted-foreground">Active Complaints</div>
+        </Card>
+        <Card className="text-center p-4">
+          <div className="flex items-center justify-center mb-2">
+            <Calendar className="h-6 w-6 text-green-500" />
+          </div>
+          <div className="text-2xl font-bold">{vaccinationSchedules.length}</div>
+          <div className="text-xs text-muted-foreground">Upcoming Vaccines</div>
+        </Card>
+        <Card className="text-center p-4">
+          <div className="flex items-center justify-center mb-2">
+            <Shield className="h-6 w-6 text-purple-500" />
+          </div>
+          <div className="text-2xl font-bold">{vaccinations.filter(v => v.status === 'completed').length}</div>
+          <div className="text-xs text-muted-foreground">Vaccinations Done</div>
+        </Card>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Quick Actions</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card
+            className="p-4 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200"
+            onClick={() => navigate("/citizen/health")}
+          >
+            <div className="flex flex-col items-center text-center space-y-2">
+              <HeartPulse className="h-8 w-8 text-red-500" />
+              <span className="text-sm font-medium">Request Service</span>
             </div>
-            <p className="text-xs font-mono text-muted-foreground">{citizenId}</p>
-            <Button variant="outline" size="sm" className="w-full gap-1" onClick={() => navigate("/citizen/qr")}>
-              View Full QR Citizen ID <ArrowRight className="h-3 w-3" />
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Health Services */}
-        <Card className="glass-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-heading flex items-center gap-2">
-              <HeartPulse className="h-4 w-4 text-primary" /> Health Services
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-xs text-muted-foreground">
-              {healthRecords.length > 0
-                ? `${healthRecords.length} recent health records`
-                : "No recent health records"}
-            </p>
-            <div className="flex flex-col gap-1.5">
-              <Button variant="outline" size="sm" className="w-full justify-start gap-1 text-xs" onClick={() => navigate("/citizen/health")}>
-                View Health Records <ArrowRight className="h-3 w-3 ml-auto" />
-              </Button>
+          </Card>
+          <Card
+            className="p-4 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200"
+            onClick={() => navigate("/citizen/vaccination")}
+          >
+            <div className="flex flex-col items-center text-center space-y-2">
+              <Syringe className="h-8 w-8 text-blue-500" />
+              <span className="text-sm font-medium">View Vaccines</span>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Vaccination */}
-        <Card className="glass-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-heading flex items-center gap-2">
-              <Syringe className="h-4 w-4 text-primary" /> Vaccination
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-xs text-muted-foreground">
-              {vaccinations.length > 0
-                ? `Last: ${vaccinations[0]?.vaccine} (${vaccinations[0]?.vaccination_date})`
-                : "No vaccination records"}
-            </p>
-            <Button variant="outline" size="sm" className="w-full justify-start gap-1 text-xs" onClick={() => navigate("/citizen/vaccination")}>
-              View Vaccination Records <ArrowRight className="h-3 w-3 ml-auto" />
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Service Requests */}
-        <Card className="glass-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-heading flex items-center gap-2">
-              <FileText className="h-4 w-4 text-primary" /> Service Requests
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-xs text-muted-foreground">
-              {activeRequests > 0 ? `${activeRequests} active request(s)` : "No active requests"}
-            </p>
-            <Button variant="outline" size="sm" className="w-full justify-start gap-1 text-xs" onClick={() => navigate("/citizen/requests")}>
-              Track Requests <ArrowRight className="h-3 w-3 ml-auto" />
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Sanitation Complaints */}
-        <Card className="glass-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-heading flex items-center gap-2">
-              <MessageSquare className="h-4 w-4 text-primary" /> Sanitation Complaints
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-xs text-muted-foreground">
-              {pendingComplaints > 0 ? `${pendingComplaints} pending` : "No pending complaints"}
-            </p>
-            <div className="flex flex-col gap-1.5">
-              <Button variant="outline" size="sm" className="w-full justify-start gap-1 text-xs" onClick={() => navigate("/citizen/sanitation-complaints")}>
-                Report Complaint <ArrowRight className="h-3 w-3 ml-auto" />
-              </Button>
+          </Card>
+          <Card
+            className="p-4 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200"
+            onClick={() => navigate("/reports-complaints")}
+          >
+            <div className="flex flex-col items-center text-center space-y-2">
+              <MessageSquare className="h-8 w-8 text-orange-500" />
+              <span className="text-sm font-medium">File Complaint</span>
             </div>
-          </CardContent>
-        </Card>
+          </Card>
+          <Card
+            className="p-4 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200"
+            onClick={() => navigate("/citizen/qr")}
+          >
+            <div className="flex flex-col items-center text-center space-y-2">
+              <QrCode className="h-8 w-8 text-green-500" />
+              <span className="text-sm font-medium">View QR ID</span>
+            </div>
+          </Card>
+        </div>
+      </div>
 
-        {/* Business cards - only shown based on establishments */}
-        {/* Card 6 — My Establishments (visible if citizen has establishments) */}
-        {hasOwnedEstablishments && (
-          <>
-            <Card className="glass-card border-primary/20">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-heading flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-primary" /> My Establishments
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-xs text-muted-foreground">
-                  {establishments.length} registered establishment(s)
-                </p>
-                <div className="flex flex-col gap-1.5">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-start gap-1 text-xs"
-                    onClick={() => navigate("/citizen/establishments")}
-                  >
-                    Register Establishment <ArrowRight className="h-3 w-3 ml-auto" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-start gap-1 text-xs"
-                    onClick={() => navigate("/citizen/establishments")}
-                  >
-                    Manage Establishments <ArrowRight className="h-3 w-3 ml-auto" />
-                  </Button>
+      {/* Recent Activity */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Recent Activity</h2>
+        <Card className="p-6">
+          {recentActivity.length > 0 ? (
+            <div className="space-y-3">
+              {recentActivity.map((activity, index) => (
+                <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-3">
+                    {activity.type === 'service_request' ? (
+                      <FileText className="h-4 w-4 text-blue-500" />
+                    ) : (
+                      <MessageSquare className="h-4 w-4 text-orange-500" />
+                    )}
+                    <div>
+                      <p className="text-sm font-medium">
+                        {activity.type === 'service_request' ? activity.title : `Complaint: ${activity.complaint_type}`}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(activity.date).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant={activity.status === 'pending' || activity.status === 'Pending' ? 'secondary' : 'default'}>
+                    {activity.status}
+                  </Badge>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Card 7 — Sanitary Permit (only if the user owns an establishment) */}
-            <Card className="glass-card border-primary/20">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-heading flex items-center gap-2">
-                  <FileCheck className="h-4 w-4 text-primary" /> Sanitary Permit
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-xs text-muted-foreground">
-                  {pendingPermits > 0 ? `${pendingPermits} pending application(s)` : "No pending permits"}
-                </p>
-                <Button variant="outline" size="sm" className="w-full justify-start gap-1 text-xs" onClick={() => navigate("/citizen/sanitary-permit")}>
-                  Apply for Sanitary Permit <ArrowRight className="h-3 w-3 ml-auto" />
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Card 8 — Inspection Updates (only when inspections exist for user establishments) */}
-            <Card className="glass-card border-primary/20">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-heading flex items-center gap-2">
-                  <Search className="h-4 w-4 text-primary" /> Inspection Updates
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-xs text-muted-foreground">
-                  Upcoming inspections and any correction notices for your establishments
-                </p>
-                <Button variant="outline" size="sm" className="w-full justify-start gap-1 text-xs" onClick={() => navigate("/citizen/inspections")}>
-                  View Inspection Status <ArrowRight className="h-3 w-3 ml-auto" />
-                </Button>
-              </CardContent>
-            </Card>
-          </>
-        )}
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <Activity className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>No recent activity</p>
+            </div>
+          )}
+        </Card>
       </div>
     </div>
   );

@@ -162,7 +162,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Create a mock session for citizen login (demo purposes)
       // In production, you'd want proper authentication
       const mockUser = {
-        id: `citizen_${citizen.id}`,
+        id: citizen.id, // use the citizen UUID so Supabase queries match expected user_id
         email: citizen.email,
         user_metadata: {
           full_name: `${citizen.first_name} ${citizen.last_name}`,

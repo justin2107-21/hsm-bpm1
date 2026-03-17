@@ -1,6 +1,6 @@
 import { useAuth, ROLE_LABELS } from "@/contexts/AuthContext";
 import { Bell, Search, Moon, Sun } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,12 +17,28 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const TopBar = () => {
   const { currentRole, userName, signOut } = useAuth();
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof document === "undefined") return false;
+    return document.documentElement.classList.contains("dark");
+  });
   const [searchOpen, setSearchOpen] = useState(false);
 
+  // Initialize from persisted theme state and keep in sync with document class
+  useEffect(() => {
+    const stored = window.localStorage.getItem("healthguard-theme");
+    const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+    const resolved = stored === "dark" || (!stored && prefersDark);
+    setIsDark(resolved);
+    document.documentElement.classList.toggle("dark", resolved);
+  }, []);
+
   const toggleDark = () => {
-    setIsDark(!isDark);
-    document.documentElement.classList.toggle("dark");
+    setIsDark((prev) => {
+      const next = !prev;
+      document.documentElement.classList.toggle("dark", next);
+      window.localStorage.setItem("healthguard-theme", next ? "dark" : "light");
+      return next;
+    });
   };
 
   return (

@@ -4,10 +4,36 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, Printer } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react";
+import { nanoid } from "nanoid";
 
 const CitizenQR = () => {
   const { user, userName, citizenData } = useAuth();
-  const citizenId = `GSMS-2026-${user?.id?.slice(0, 8).toUpperCase() || "UNKNOWN"}`;
+  const [citizenId, setCitizenId] = useState<string>("");
+
+  // Generate or retrieve citizen ID
+  useEffect(() => {
+    if (user?.id) {
+      // Check if citizen ID already exists in localStorage or generate new one
+      const storedId = localStorage.getItem(`citizen_id_${user.id}`);
+      if (storedId && storedId.length >= 8) {
+        setCitizenId(storedId);
+      } else {
+        // Generate new 8-character alphanumeric ID
+        const newId = nanoid(8).toUpperCase();
+        localStorage.setItem(`citizen_id_${user.id}`, newId);
+        setCitizenId(newId);
+      }
+    }
+  }, [user?.id]);
+
+  // Create QR code data
+  const qrData = JSON.stringify({
+    citizen_id: citizenId,
+    name: userName || "Unknown",
+    email: user?.email || "",
+    type: "citizen"
+  });
 
   const handlePrint = () => {
     const svg = document.getElementById("citizen-qr-svg") as unknown as SVGSVGElement | null;
@@ -100,41 +126,17 @@ const CitizenQR = () => {
         <h1 className="text-2xl font-bold font-heading">My QR Citizen ID</h1>
         <p className="text-sm text-muted-foreground">Your unique QR code for health and sanitation services</p>
       </div>
-      <div className="max-w-sm mx-auto">
-        <Card className="glass-card">
-          <CardHeader className="text-center">
-            <CardTitle className="text-sm font-heading">Digital Citizen ID</CardTitle>
-            {userName && <p className="text-xs text-muted-foreground">{userName}</p>}
-          </CardHeader>
-          <CardContent className="flex flex-col items-center gap-4">
-            <div className="p-4 bg-card rounded-xl border border-border">
-              <QRCodeSVG id="citizen-qr-svg" value={citizenId} size={180} level="H" />
-            </div>
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground">Citizen ID</p>
-              <p className="text-sm font-mono font-semibold">{citizenId}</p>
-            </div>
-            <div className="flex gap-2 w-full">
-              <Button variant="outline" size="sm" className="flex-1 gap-1">
-                <Download className="h-4 w-4" /> Download
-              </Button>
-              <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={handlePrint}>
-                <Printer className="h-4 w-4" /> Print
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
-      {citizenData && (
-        <div className="max-w-2xl mx-auto">
-          <Card className="glass-card">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+        {/* Personal Information - Left Side */}
+        {citizenData && (
+          <Card className="glass-card h-fit">
             <CardHeader>
               <CardTitle className="text-lg font-heading">Personal Information</CardTitle>
               <p className="text-sm text-muted-foreground">Your registered personal details</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Full Name</label>
                   <p className="text-sm">
@@ -172,8 +174,33 @@ const CitizenQR = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
-      )}
+        )}
+
+        {/* Digital Citizen ID - Right Side */}
+        <Card className="glass-card h-fit">
+          <CardHeader className="text-center">
+            <CardTitle className="text-sm font-heading">Digital Citizen ID</CardTitle>
+            {userName && <p className="text-xs text-muted-foreground">{userName}</p>}
+          </CardHeader>
+          <CardContent className="flex flex-col items-center gap-4">
+            <div className="p-4 bg-card rounded-xl border border-border">
+              <QRCodeSVG id="citizen-qr-svg" value={qrData} size={180} level="H" />
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground">Citizen ID</p>
+              <p className="text-sm font-mono font-semibold">{citizenId}</p>
+            </div>
+            <div className="flex gap-2 w-full">
+              <Button variant="outline" size="sm" className="flex-1 gap-1">
+                <Download className="h-4 w-4" /> Download
+              </Button>
+              <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={handlePrint}>
+                <Printer className="h-4 w-4" /> Print
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

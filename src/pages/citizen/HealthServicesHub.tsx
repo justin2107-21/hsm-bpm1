@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
@@ -498,110 +497,112 @@ const ServiceDetailModal = ({ service, onClose, onRequest, category }: ServiceDe
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <Card className="max-w-2xl w-full max-h-[90vh] overflow-auto">
-        <DialogHeader className="sticky top-0 bg-card border-b p-6 flex flex-row items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <IconComponent className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <DialogTitle className="text-sm font-semibold">{service.title}</DialogTitle>
-              {service.private && (
-                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                  🔒 Strictly Confidential
-                </p>
-              )}
-            </div>
-          </div>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </DialogHeader>
-        <CardContent className="space-y-6 p-6">
-          {/* Modal Sections (if provided) */}
-          {service.modalSections ? (
-            <div className="space-y-6">
-              {service.modalSections.map((section: any, idx: number) => (
-                <div key={idx}>
-                  <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-primary" />
-                    {section.title}
-                  </h3>
-                  {section.content && (
-                    <p className="text-sm text-muted-foreground">{section.content}</p>
-                  )}
-                  {section.items && (
-                    <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                      {section.items.map((item: string, itemIdx: number) => (
-                        <li key={itemIdx}>{item}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <>
-              {/* About Service */}
-              <div>
-                <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-primary" />
-                  About This Service
-                </h3>
-                <p className="text-sm text-muted-foreground">{service.fullDescription}</p>
+      <div className="w-full max-w-2xl max-h-[calc(100vh-4rem)] overflow-auto">
+        <Card className="overflow-hidden">
+          <div className="sticky top-0 bg-card border-b p-6 flex flex-row items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <IconComponent className="h-6 w-6 text-primary" />
               </div>
-
-              {/* Who Should Avail */}
-              {service.whoShouldAvail && (
-                <div>
-                  <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                    <Users className="h-5 w-5 text-primary" />
-                    Who Should Avail
-                  </h3>
-                  <p className="text-sm text-muted-foreground">{service.whoShouldAvail}</p>
-                </div>
-              )}
-
-              {/* Schedule */}
-              {service.schedule && (
-                <div>
-                  <h3 className="font-semibold text-sm mb-2">📅 Schedule</h3>
-                  <p className="text-sm">{service.schedule}</p>
-                </div>
-              )}
-
-            </>
-          )}
-
-          {/* Available At (always shown when locations exist) */}
-          {service.locations && (
-            <div>
-              <h3 className="font-semibold text-sm mb-2">📍 Available At</h3>
-              <div className="space-y-3">
-                {service.locations.map((location: any, idx: number) => (
-                  <div key={idx} className="text-sm p-3 bg-muted rounded">
-                    <p className="font-semibold">{location.name}</p>
-                    {location.address && (
-                      <p className="text-muted-foreground">{location.address}</p>
+              <div>
+                <h2 className="text-sm font-semibold">{service.title}</h2>
+                {service.private && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                    🔒 Strictly Confidential
+                  </p>
+                )}
+              </div>
+            </div>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <CardContent className="space-y-6 p-6">
+            {/* Modal Sections (if provided) */}
+            {service.modalSections ? (
+              <div className="space-y-6">
+                {service.modalSections.map((section: any, idx: number) => (
+                  <div key={idx}>
+                    <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <CheckCircle className="h-5 w-5 text-primary" />
+                      {section.title}
+                    </h3>
+                    {section.content && (
+                      <p className="text-sm text-muted-foreground">{section.content}</p>
                     )}
-                    {location.schedule && (
-                      <p className="text-xs text-muted-foreground mt-1">{location.schedule}</p>
+                    {section.items && (
+                      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                        {section.items.map((item: string, itemIdx: number) => (
+                          <li key={itemIdx}>{item}</li>
+                        ))}
+                      </ul>
                     )}
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <>
+                {/* About Service */}
+                <div>
+                  <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-primary" />
+                    About This Service
+                  </h3>
+                  <p className="text-sm text-muted-foreground">{service.fullDescription}</p>
+                </div>
 
-          {/* Action Button */}
-          <Button 
-            onClick={() => onRequest(service)}
-            className="w-full h-14 text-base font-semibold"
-          >
-            {service.action || "Request Service"}
-          </Button>
-        </CardContent>
-      </Card>
+                {/* Who Should Avail */}
+                {service.whoShouldAvail && (
+                  <div>
+                    <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <Users className="h-5 w-5 text-primary" />
+                      Who Should Avail
+                    </h3>
+                    <p className="text-sm text-muted-foreground">{service.whoShouldAvail}</p>
+                  </div>
+                )}
+
+                {/* Schedule */}
+                {service.schedule && (
+                  <div>
+                    <h3 className="font-semibold text-sm mb-2">📅 Schedule</h3>
+                    <p className="text-sm">{service.schedule}</p>
+                  </div>
+                )}
+
+              </>
+            )}
+
+            {/* Available At (always shown when locations exist) */}
+            {service.locations && (
+              <div>
+                <h3 className="font-semibold text-sm mb-2">📍 Available At</h3>
+                <div className="space-y-3">
+                  {service.locations.map((location: any, idx: number) => (
+                    <div key={idx} className="text-sm p-3 bg-muted rounded">
+                      <p className="font-semibold">{location.name}</p>
+                      {location.address && (
+                        <p className="text-muted-foreground">{location.address}</p>
+                      )}
+                      {location.schedule && (
+                        <p className="text-xs text-muted-foreground mt-1">{location.schedule}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Action Button */}
+            <Button 
+              onClick={() => onRequest(service)}
+              className="w-full h-14 text-base font-semibold"
+            >
+              {service.action || "Request Service"}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
@@ -617,57 +618,59 @@ const PWDServiceDetailModal = ({ service, onClose, onRequest }: PWDServiceDetail
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <Card className="max-w-2xl w-full">
-        <DialogHeader className="sticky top-0 bg-card border-b p-6 flex flex-row items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
-              <IconComponent className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+      <div className="w-full max-w-2xl max-h-[calc(100vh-4rem)] overflow-auto">
+        <Card className="overflow-hidden">
+          <div className="sticky top-0 bg-card border-b p-6 flex flex-row items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                <IconComponent className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+              </div>
+              <h2 className="text-xl font-semibold">{service.title}</h2>
             </div>
-            <DialogTitle className="text-xl">{service.title}</DialogTitle>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </DialogHeader>
-        <CardContent className="space-y-6 p-6">
-          <div>
-            <h3 className="font-semibold text-base mb-2">What is this benefit?</h3>
-            <p className="text-sm text-muted-foreground">
-              {service.fullDescription || service.description}
-            </p>
-          </div>
+          <CardContent className="space-y-6 p-6">
+            <div>
+              <h3 className="font-semibold text-base mb-2">What is this benefit?</h3>
+              <p className="text-sm text-muted-foreground">
+                {service.fullDescription || service.description}
+              </p>
+            </div>
 
-          {/* Required Documents */}
-          <div>
-            <h3 className="font-semibold text-base mb-3 flex items-center gap-2">
-              📋 Required Documents
-            </h3>
-            <ul className="space-y-2">
-              {service.requirements.map((req: string, idx: number) => (
-                <li key={idx} className="flex items-start gap-2 text-sm">
-                  <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                  <span>{req}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+            {/* Required Documents */}
+            <div>
+              <h3 className="font-semibold text-base mb-3 flex items-center gap-2">
+                📋 Required Documents
+              </h3>
+              <ul className="space-y-2">
+                {service.requirements.map((req: string, idx: number) => (
+                  <li key={idx} className="flex items-start gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <span>{req}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-          {/* Where to Claim */}
-          <div>
-            <h3 className="font-semibold text-base mb-2 flex items-center gap-2">
-              📍 Where to Claim
-            </h3>
-            <p className="text-sm p-3 bg-muted rounded">{service.claimLocation}</p>
-          </div>
+            {/* Where to Claim */}
+            <div>
+              <h3 className="font-semibold text-base mb-2 flex items-center gap-2">
+                📍 Where to Claim
+              </h3>
+              <p className="text-sm p-3 bg-muted rounded">{service.claimLocation}</p>
+            </div>
 
-          <Button 
-            onClick={() => onRequest(service)}
-            className="w-full h-14 text-base font-semibold"
-          >
-            Request Assistance
-          </Button>
-        </CardContent>
-      </Card>
+            <Button 
+              onClick={() => onRequest(service)}
+              className="w-full h-14 text-base font-semibold"
+            >
+              Request Assistance
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
@@ -709,7 +712,7 @@ const PWDCard = ({ service, onClick }: PWDCardProps) => {
   const IconComponent = service.icon;
 
   return (
-    <Card className="border-2 border-orange-200 dark:border-orange-800 h-full bg-orange-50 dark:bg-orange-950/20">
+    <Card className="border-2 border-orange-200 dark:border-orange-700 h-full bg-orange-50 dark:bg-orange-900/20">
       <CardContent className="p-6 space-y-4">
         <div className="flex items-start gap-4">
           <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-lg flex-shrink-0">
@@ -765,6 +768,27 @@ const HealthServicesHub = () => {
   const [requestingService, setRequestingService] = useState<any>(null);
   const [showAssistanceModal, setShowAssistanceModal] = useState(false);
   const queryClient = useQueryClient();
+
+  const isModalOpen = Boolean(selectedService || showHelpModal || showAssistanceModal);
+  const bodyOverflow = useRef<string>("");
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    bodyOverflow.current = document.body.style.overflow;
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (isModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = bodyOverflow.current;
+    }
+
+    return () => {
+      document.body.style.overflow = bodyOverflow.current;
+    };
+  }, [isModalOpen]);
 
   const requestMutation = useMutation({
     mutationFn: async (service: any) => {
@@ -836,7 +860,7 @@ const HealthServicesHub = () => {
               variant="outline" 
               size="md"
               onClick={() => setShowHelpModal(true)}
-              className="gap-2 h-12"
+              className="gap-2 h-14 px-5 rounded-lg bg-green-50 text-green-900 dark:bg-emerald-600 dark:text-white hover:bg-green-100 dark:hover:bg-emerald-500"
             >
               <HelpCircle className="h-5 w-5" />
               <span className="hidden sm:inline">Guide Me</span>
@@ -959,7 +983,7 @@ const HealthServicesHub = () => {
             )}
 
             {/* SENIOR & PWD BENEFITS */}
-            {filteredSenior.length > 0 && (
+            {visibleSenior.length > 0 && (
               <section className="space-y-4">
                 <div className="space-y-2">
                   <h2 className="text-lg md:text-xl font-bold font-heading flex items-center gap-2">
@@ -971,7 +995,7 @@ const HealthServicesHub = () => {
                   </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredSenior.map(service => (
+                  {visibleSenior.map((service) => (
                     <PWDCard
                       key={service.id}
                       service={service}
@@ -1017,103 +1041,107 @@ const HealthServicesHub = () => {
         {/* Help Modal */}
         {showHelpModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <Card className="max-w-md w-full">
-              <DialogHeader className="p-6 border-b flex flex-row items-center justify-between">
-                <DialogTitle className="text-sm font-semibold flex items-center gap-2">
-                  <HelpCircle className="h-5 w-5" />
-                  How To Use This Page
-                </DialogTitle>
-                <Button variant="ghost" size="sm" onClick={() => setShowHelpModal(false)}>
-                  <X className="h-4 w-4" />
-                </Button>
-              </DialogHeader>
-              <CardContent className="space-y-4 p-6">
-                <p className="text-sm font-medium text-muted-foreground">Simple guide for first-time users</p>
-                <div className="space-y-3">
-                  <div className="flex gap-3">
-                    <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">1</div>
-                    <div>
-                      <p className="font-semibold">Find Your Service</p>
-                      <p className="text-xs text-muted-foreground">Use the search bar or tap on a category button to find the health service you need.</p>
-                    </div>
+            <div className="w-full max-w-md max-h-[calc(100vh-4rem)] overflow-auto">
+              <Card className="overflow-hidden">
+                <div className="p-6 border-b flex flex-row items-center justify-between">
+                  <div className="text-sm font-semibold flex items-center gap-2">
+                    <HelpCircle className="h-5 w-5" />
+                    How To Use This Page
                   </div>
-                  <div className="flex gap-3">
-                    <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">2</div>
-                    <div>
-                      <p className="font-semibold">Tap on the Service</p>
-                      <p className="text-xs text-muted-foreground">Tap or click on the service card to view more details, available locations, and schedules.</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">3</div>
-                    <div>
-                      <p className="font-semibold">Request an Appointment</p>
-                      <p className="text-xs text-muted-foreground">Tap the button at the bottom of the service page to request an appointment or join a program.</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">4</div>
-                    <div>
-                      <p className="font-semibold">Wait for Confirmation</p>
-                      <p className="text-xs text-muted-foreground">Your request will be recorded. You will receive confirmation about your appointment schedule.</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">5</div>
-                    <div>
-                      <p className="font-semibold">Visit the Health Center</p>
-                      <p className="text-xs text-muted-foreground">Go to the health center on the scheduled time. Bring a valid ID and any required documents.</p>
-                    </div>
-                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setShowHelpModal(false)}>
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded p-3">
-                  <p className="text-xs text-blue-900 dark:text-blue-100">
-                    Need more help? Visit any health center and ask a staff member to assist you with using this system. We are happy to help!
-                  </p>
+                <CardContent className="space-y-4 p-6">
+                  <p className="text-sm font-medium text-muted-foreground">Simple guide for first-time users</p>
+                  <div className="space-y-3">
+                    <div className="flex gap-3">
+                      <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">1</div>
+                      <div>
+                        <p className="font-semibold">Find Your Service</p>
+                        <p className="text-xs text-muted-foreground">Use the search bar or tap on a category button to find the health service you need.</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">2</div>
+                      <div>
+                        <p className="font-semibold">Tap on the Service</p>
+                        <p className="text-xs text-muted-foreground">Tap or click on the service card to view more details, available locations, and schedules.</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">3</div>
+                      <div>
+                        <p className="font-semibold">Request an Appointment</p>
+                        <p className="text-xs text-muted-foreground">Tap the button at the bottom of the service page to request an appointment or join a program.</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">4</div>
+                      <div>
+                        <p className="font-semibold">Wait for Confirmation</p>
+                        <p className="text-xs text-muted-foreground">Your request will be recorded. You will receive confirmation about your appointment schedule.</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">5</div>
+                      <div>
+                        <p className="font-semibold">Visit the Health Center</p>
+                        <p className="text-xs text-muted-foreground">Go to the health center on the scheduled time. Bring a valid ID and any required documents.</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded p-3">
+                    <p className="text-xs text-blue-900 dark:text-blue-100">
+                      Need more help? Visit any health center and ask a staff member to assist you with using this system. We are happy to help!
+                    </p>
+                  </div>
+                </CardContent>
+                <div className="p-6 border-t">
+                  <Button onClick={() => setShowHelpModal(false)} className="w-full">
+                    Got It, Thanks!
+                  </Button>
                 </div>
-              </CardContent>
-              <div className="p-6 border-t">
-                <Button onClick={() => setShowHelpModal(false)} className="w-full">
-                  Got It, Thanks!
-                </Button>
-              </div>
-            </Card>
+              </Card>
+            </div>
           </div>
         )}
 
         {/* Assistance Confirmation Modal */}
         {showAssistanceModal && requestingService && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <Card className="max-w-md w-full">
-              <DialogHeader className="p-6 border-b flex flex-row items-center justify-between">
-                <DialogTitle className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  Assistance Request Submitted
-                </DialogTitle>
-                <Button variant="ghost" size="sm" onClick={() => setShowAssistanceModal(false)}>
-                  <X className="h-4 w-4" />
-                </Button>
-              </DialogHeader>
-              <CardContent className="p-6 space-y-4">
-                <p className="text-sm font-semibold">{requestingService.title}</p>
-                <p className="text-sm text-muted-foreground">
-                  Your request for assistance has been recorded. Please visit the health center with the required documents to complete the process.
-                </p>
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold">What to do next:</p>
-                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                    <li>Wait for a confirmation message or call</li>
-                    <li>Prepare a valid ID before visiting</li>
-                    <li>Arrive 10–15 minutes before your schedule</li>
-                  </ul>
+            <div className="w-full max-w-md max-h-[calc(100vh-4rem)] overflow-auto">
+              <Card className="overflow-hidden">
+                <div className="p-6 border-b flex flex-row items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <div className="font-semibold">Assistance Request Submitted</div>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setShowAssistanceModal(false)}>
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-              </CardContent>
-              <div className="p-6 border-t">
-                <Button onClick={() => setShowAssistanceModal(false)} className="w-full">
-                  Done
-                </Button>
-              </div>
-            </Card>
+                <CardContent className="p-6 space-y-4">
+                  <p className="text-sm font-semibold">{requestingService.title}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Your request for assistance has been recorded. Please visit the health center with the required documents to complete the process.
+                  </p>
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold">What to do next:</p>
+                    <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                      <li>Wait for a confirmation message or call</li>
+                      <li>Prepare a valid ID before visiting</li>
+                      <li>Arrive 10–15 minutes before your schedule</li>
+                    </ul>
+                  </div>
+                </CardContent>
+                <div className="p-6 border-t">
+                  <Button onClick={() => setShowAssistanceModal(false)} className="w-full">
+                    Done
+                  </Button>
+                </div>
+              </Card>
+            </div>
           </div>
         )}
       </div>

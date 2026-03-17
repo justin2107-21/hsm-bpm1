@@ -41,6 +41,7 @@ import SystemAdminPlaceholder from "@/pages/sys/SystemAdminPlaceholder";
 import SettingsPage from "@/pages/SettingsPage";
 import LoginPage from "@/pages/LoginPage";
 import NotFound from "@/pages/NotFound";
+import ReportsComplaints from "@/pages/ReportsComplaints";
 
 // Citizen pages
 import CitizenQR from "@/pages/citizen/CitizenQR";
