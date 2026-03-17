@@ -35,7 +35,7 @@ export default function CitizenSearchPage() {
     setLoading(true);
     try {
       const response = await fetch(
-        `http://localhost:5000/api/citizens/search?q=${encodeURIComponent(searchQuery)}`
+        `/.netlify/functions/citizens-search?q=${encodeURIComponent(searchQuery)}`
       );
       
       if (!response.ok) {
@@ -60,7 +60,7 @@ export default function CitizenSearchPage() {
 
   const handleViewDetails = async (citizenId: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/citizens/${citizenId}`);
+      const response = await fetch(`/.netlify/functions/citizens-get?id=${citizenId}`);
       const data = await response.json();
       setSelectedCitizen(data);
     } catch (error) {

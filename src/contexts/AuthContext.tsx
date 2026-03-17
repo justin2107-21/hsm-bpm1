@@ -141,7 +141,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signInAsCitizen = async (email: string, password: string) => {
     try {
       // First, try to find the citizen in CIE database by email
-      const response = await fetch(`http://localhost:5000/api/citizens/search?q=${encodeURIComponent(email)}`);
+      // Uses Netlify Functions (works both locally and in production)
+      const response = await fetch(`/.netlify/functions/citizens-search?q=${encodeURIComponent(email)}`);
       if (!response.ok) {
         return { error: new Error('Failed to search citizens') };
       }

@@ -1,0 +1,36 @@
+# Netlify Configuration File
+[build]
+  command = "npm run build"
+  functions = "netlify/functions"
+  publish = "dist"
+
+# Local dev server configuration
+[dev]
+  command = "npm run dev"
+  targetPort = 8080
+  port = 8888
+
+# Redirect all API calls to Netlify Functions
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true
+
+# Set up environment variables for both local and production
+[context.production.environment]
+  CIE_SUPABASE_URL = "https://tjcwwocpkpmhtdtlsiuc.supabase.co"
+  CIE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRqY3d3b2Nwa3BtaHRkdGxzaXVjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDYxOTczNiwiZXhwIjoyMDg2MTk1NzM2fQ.Yv7Q0pcs5tx-JBWcsPzIemj_RoYj1MF87ca_DbqKmMY"
+  CITIZENS_TABLE = "profiles"
+  VITE_SUPABASE_URL = "https://zrwmxtsuxcsxjhvcbktg.supabase.co"
+  VITE_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_9VwyvpY8tdz40bVsGf_Hog_KSjxZgY6"
+  VITE_SUPABASE_PROJECT_ID = "zrwmxtsuxcsxjhvcbktg"
+
+# Local development environment (dev)
+[context.deploy-preview.environment]
+  CIE_SUPABASE_URL = "https://tjcwwocpkpmhtdtlsiuc.supabase.co"
+  CIE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRqY3d3b2Nwa3BtaHRkdGxzaXVjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDYxOTczNiwiZXhwIjoyMDg2MTk1NzM2fQ.Yv7Q0pcs5tx-JBWcsPzIemj_RoYj1MF87ca_DbqKmMY"
+  CITIZENS_TABLE = "profiles"
+  VITE_SUPABASE_URL = "https://zrwmxtsuxcsxjhvcbktg.supabase.co"
+  VITE_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_9VwyvpY8tdz40bVsGf_Hog_KSjxZgY6"
+  VITE_SUPABASE_PROJECT_ID = "zrwmxtsuxcsxjhvcbktg"
