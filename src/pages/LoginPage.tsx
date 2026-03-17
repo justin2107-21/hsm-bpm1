@@ -8,10 +8,11 @@ import { Activity, LogIn, Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
 
 const LoginPage = () => {
-  const { signIn } = useAuth();
+  const { signIn, signInAsCitizen } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loginMode, setLoginMode] = useState<"staff" | "citizen">("staff");
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     if (typeof window === "undefined") return "light";
     const stored = window.localStorage.getItem("healthguard-theme");
@@ -38,7 +39,10 @@ const LoginPage = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await signIn(email, password);
+
+    const authFunction = loginMode === "citizen" ? signInAsCitizen : signIn;
+    const { error } = await authFunction(email, password);
+
     if (error) {
       toast.error(error.message);
     }
@@ -82,14 +86,36 @@ const LoginPage = () => {
                 <LogIn className="h-4 w-4 text-primary" /> Sign in to continue
               </span>
             </CardTitle>
+            <div className="flex gap-2 mt-3">
+              <Button
+                type="button"
+                variant={loginMode === "staff" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setLoginMode("staff")}
+                className="flex-1"
+              >
+                Staff Login
+              </Button>
+              <Button
+                type="button"
+                variant={loginMode === "citizen" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setLoginMode("citizen")}
+                className="flex-1"
+              >
+                Citizen Login
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-1.5">
-                <Label className="text-xs">Email</Label>
+                <Label className="text-xs">
+                  {loginMode === "citizen" ? "Email (from CIE database)" : "Email"}
+                </Label>
                 <Input
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder={loginMode === "citizen" ? "citizen@example.com" : "you@example.com"}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -100,7 +126,7 @@ const LoginPage = () => {
                 <Label className="text-xs">Password</Label>
                 <Input
                   type="password"
-                  placeholder="••••••••"
+                  placeholder={loginMode === "citizen" ? "Any password (demo)" : "••••••••"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -108,7 +134,10 @@ const LoginPage = () => {
                 />
               </div>
               <Button type="submit" className="w-full mt-1" disabled={loading}>
-                {loading ? "Signing you in..." : "Sign In"}
+                {loading
+                  ? `Signing you in as ${loginMode === "citizen" ? "citizen" : "staff"}...`
+                  : `Sign In as ${loginMode === "citizen" ? "Citizen" : "Staff"}`
+                }
               </Button>
             </form>
           </CardContent>

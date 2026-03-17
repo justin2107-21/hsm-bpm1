@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
+import rateLimit from "express-rate-limit";
 
 // Load environment variables from backend/.env
 dotenv.config();
@@ -39,13 +40,32 @@ const hsm = createClient(HSM_SUPABASE_URL, HSM_ANON_KEY, {
 });
 
 /**
- * Supabase client for your classmate’s CIE project (uses service-role key).
+ * Supabase client for your classmate's CIE project (uses service-role key).
  * - IMPORTANT: Never put this key in the frontend.
  * - Keep all CIE access strictly inside this backend.
  */
 const cie = createClient(CIE_SUPABASE_URL, CIE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
+
+// Test CIE connection on startup
+(async () => {
+  const testTables = ['resident', 'residents', 'citizen', 'citizens', 'users', 'people', 'person'];
+  for (const table of testTables) {
+    try {
+      const { data, error } = await cie.from(table).select('*').limit(1);
+      if (!error) {
+        console.log(`CIE Connection successful - found table: '${table}'`);
+        console.log('Sample data:', JSON.stringify(data[0], null, 2));
+        break;
+      } else {
+        console.log(`Table '${table}' not found:`, error.message);
+      }
+    } catch (e) {
+      console.log(`Error testing table '${table}':`, e.message);
+    }
+  }
+})();
 
 const app = express();
 
@@ -57,10 +77,28 @@ app.use(
     credentials: false,
   })
 );
+
+// Basic rate limiting to prevent abuse (50 requests per minute per IP)
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 50, // limit each IP to 50 requests per windowMs
+  message: { error: 'Too many requests, please try again later.' }
+});
+app.use('/api/', limiter);
+
 app.use(express.json());
 
 // Change this if your CIE table name is different.
-const CITIZENS_TABLE = "citizen";
+// You can also set CITIZENS_TABLE in backend/.env to avoid editing this file.
+const CITIZENS_TABLE = process.env.CITIZENS_TABLE || "citizen";
+
+if (!process.env.CITIZENS_TABLE) {
+  console.warn(
+    `CITIZENS_TABLE not set in .env; defaulting to '${CITIZENS_TABLE}'. If the table does not exist, set CITIZENS_TABLE to the correct name.`
+  );
+} else {
+  console.log(`Using CITIZENS_TABLE: '${CITIZENS_TABLE}'`);
+}
 
 // Health check (quick way to verify server is running)
 app.get("/health", (_req, res) => {
@@ -97,7 +135,6 @@ app.get("/api/debug/tables", async (_req, res) => {
     if (error) {
       return res.status(500).json({ error: error.message });
     }
-
     return res.json(data ?? []);
   } catch (e) {
     return res
@@ -147,7 +184,6 @@ app.get("/api/debug/columns/:table", async (req, res) => {
  * ---------------------
  * This route tries a list of likely table names in your classmate's
  * CIE Supabase project and attempts to fetch a single row from each.
- *
  * - It uses the existing CIE Supabase client with the service-role key,
  *   but NEVER returns the key itself.
  * - It only returns the table name and column names (object keys).
@@ -163,6 +199,16 @@ app.get("/api/debug/find-table", async (_req, res) => {
     "users",
     "tbl_users",
     "people",
+    "resident",
+    "residents",
+    "tbl_residents",
+    "person",
+    "persons",
+    "tbl_persons",
+    "cie_citizens",
+    "cie_residents",
+    "public_citizens",
+    "public_residents",
   ];
 
   try {
@@ -214,30 +260,15 @@ app.get("/api/debug/find-table", async (_req, res) => {
  */
 
 /**
- * GET /api/citizen/search?q=
- * Search citizens by first_name OR last_name.
- *
- * Notes:
- * - This assumes columns: first_name, last_name
- * - "ilike" is case-insensitive pattern matching in Postgres.
+ * GET /api/citizens
+ * Return all citizens (capped to 1000 to avoid huge payloads).
  */
-app.get("/api/citizen/search", async (req, res) => {
-  const qRaw = typeof req.query.q === "string" ? req.query.q : "";
-  const q = qRaw.trim();
-
-  if (!q) {
-    return res.status(400).json({
-      error: "Missing query param: q",
-      example: "/api/citizen/search?q=juan",
-    });
-  }
-
+app.get("/api/citizens", async (_req, res) => {
   try {
     const { data, error } = await cie
       .from(CITIZENS_TABLE)
       .select("*")
-      .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%`)
-      .limit(100);
+      .limit(1000);
 
     if (error) return res.status(500).json({ error: error.message });
     return res.json(data ?? []);
@@ -247,15 +278,30 @@ app.get("/api/citizen/search", async (req, res) => {
 });
 
 /**
- * GET /api/citizen
- * Return all citizens (capped to 1000 to avoid huge payloads).
+ * GET /api/citizens/search?q=
+ * Search citizens by first_name OR last_name.
+ *
+ * Notes:
+ * - This assumes columns: first_name, last_name
+ * - "ilike" is case-insensitive pattern matching in Postgres.
  */
-app.get("/api/citizen", async (_req, res) => {
+app.get("/api/citizens/search", async (req, res) => {
+  const qRaw = typeof req.query.q === "string" ? req.query.q : "";
+  const q = qRaw.trim();
+
+  if (!q) {
+    return res.status(400).json({
+      error: "Missing query param: q",
+      example: "/api/citizens/search?q=juan",
+    });
+  }
+
   try {
     const { data, error } = await cie
       .from(CITIZENS_TABLE)
       .select("*")
-      .limit(1000);
+      .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%`)
+      .limit(100);
 
     if (error) return res.status(500).json({ error: error.message });
     return res.json(data ?? []);
@@ -279,6 +325,52 @@ app.get("/api/citizens/:id", async (req, res) => {
     const { data, error } = await cie
       .from(CITIZENS_TABLE)
       .select("*")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) return res.status(500).json({ error: error.message });
+    if (!data) return res.status(404).json({ error: "Citizen not found" });
+    return res.json(data);
+  } catch (e) {
+    return res.status(500).json({ error: e?.message ?? "Unknown error" });
+  }
+});
+
+/**
+ * GET /api/citizens/:id/personal-info
+ * Return personal information for a specific citizen.
+ * Returns: id, first_name, last_name, birthdate, gender, barangay
+ */
+app.get("/api/citizens/:id/personal-info", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const { data, error } = await cie
+      .from(CITIZENS_TABLE)
+      .select("id, first_name, last_name, birthdate, gender, barangay")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) return res.status(500).json({ error: error.message });
+    if (!data) return res.status(404).json({ error: "Citizen not found" });
+    return res.json(data);
+  } catch (e) {
+    return res.status(500).json({ error: e?.message ?? "Unknown error" });
+  }
+});
+
+/**
+ * GET /api/citizens/:id/contact-info
+ * Return contact information for a specific citizen.
+ * Returns: email, phone, address (if exists)
+ */
+app.get("/api/citizens/:id/contact-info", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const { data, error } = await cie
+      .from(CITIZENS_TABLE)
+      .select("email, phone, address")
       .eq("id", id)
       .maybeSingle();
 

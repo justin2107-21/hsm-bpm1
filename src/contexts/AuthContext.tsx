@@ -29,8 +29,11 @@ interface AuthContextType {
   currentRole: UserRole;
   userName: string;
   loading: boolean;
+  roleLoading: boolean;
   hasEstablishments: boolean;
+  citizenData: any | null;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInAsCitizen: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -42,7 +45,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentRole, setCurrentRole] = useState<UserRole>("Citizen_User");
   const [userName, setUserName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [roleLoading, setRoleLoading] = useState(false);
   const [hasEstablishments, setHasEstablishments] = useState(false);
+  const [citizenData, setCitizenData] = useState<any | null>(null);
 
   const fetchUserRole = async (userId: string) => {
     const { data } = await supabase.rpc('get_user_role', { _user_id: userId });
@@ -73,13 +78,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setHasEstablishments(!!(data && data.length > 0));
   };
 
-  const fetchUserData = (userId: string) => {
-    fetchUserRole(userId);
-    fetchProfile(userId);
-    fetchEstablishments(userId);
+  const fetchUserData = async (userId: string) => {
+    setRoleLoading(true);
+    await Promise.all([
+      fetchUserRole(userId),
+      fetchProfile(userId),
+      fetchEstablishments(userId)
+    ]);
+    setRoleLoading(false);
   };
 
   useEffect(() => {
+    // Check for existing citizen session first
+    const citizenSession = localStorage.getItem('cie_citizen_session');
+    const citizenData = localStorage.getItem('cie_citizen_data');
+
+    if (citizenSession && citizenData) {
+      const session = JSON.parse(citizenSession);
+      const citizen = JSON.parse(citizenData);
+      setUser(session.user);
+      setSession(session);
+      setUserName(`${citizen.first_name} ${citizen.last_name}`);
+      setCurrentRole('Citizen_User');
+      setCitizenData(citizen);
+      setLoading(false);
+      return;
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
@@ -113,6 +138,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error: error as Error | null };
   };
 
+  const signInAsCitizen = async (email: string, password: string) => {
+    try {
+      // First, try to find the citizen in CIE database by email
+      const response = await fetch(`http://localhost:5000/api/citizens/search?q=${encodeURIComponent(email)}`);
+      if (!response.ok) {
+        return { error: new Error('Failed to search citizens') };
+      }
+
+      const citizens = await response.json();
+      const citizen = citizens.find((c: any) => c.email?.toLowerCase() === email.toLowerCase());
+
+      if (!citizen) {
+        return { error: new Error('Citizen not found with this email') };
+      }
+
+      // For demo purposes, accept any password for found citizens
+      if (!password || password.length < 1) {
+        return { error: new Error('Password is required') };
+      }
+
+      // Create a mock session for citizen login (demo purposes)
+      // In production, you'd want proper authentication
+      const mockUser = {
+        id: `citizen_${citizen.id}`,
+        email: citizen.email,
+        user_metadata: {
+          full_name: `${citizen.first_name} ${citizen.last_name}`,
+          role: 'Citizen_User'
+        }
+      };
+
+      const mockSession = {
+        user: mockUser,
+        access_token: 'mock_citizen_token',
+        refresh_token: 'mock_refresh_token'
+      };
+
+      // Set the mock session
+      setUser(mockUser as any);
+      setSession(mockSession as any);
+      setUserName(`${citizen.first_name} ${citizen.last_name}`);
+      setCurrentRole('Citizen_User');
+      setCitizenData(citizen);
+
+      // Store citizen data for the session
+      localStorage.setItem('cie_citizen_data', JSON.stringify(citizen));
+      localStorage.setItem('cie_citizen_session', JSON.stringify(mockSession));
+
+      return { error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -120,10 +199,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCurrentRole("Citizen_User");
     setUserName("");
     setHasEstablishments(false);
+    setCitizenData(null);
+    localStorage.removeItem('cie_citizen_data');
+    localStorage.removeItem('cie_citizen_session');
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, currentRole, userName, loading, hasEstablishments, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, currentRole, userName, loading, roleLoading, hasEstablishments, citizenData, signIn, signInAsCitizen, signOut }}>
       {children}
     </AuthContext.Provider>
   );

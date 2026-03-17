@@ -3,9 +3,10 @@ import { QRCodeSVG } from "qrcode.react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, Printer } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 const CitizenQR = () => {
-  const { user, userName } = useAuth();
+  const { user, userName, citizenData } = useAuth();
   const citizenId = `GSMS-2026-${user?.id?.slice(0, 8).toUpperCase() || "UNKNOWN"}`;
 
   const handlePrint = () => {
@@ -124,6 +125,55 @@ const CitizenQR = () => {
           </CardContent>
         </Card>
       </div>
+
+      {citizenData && (
+        <div className="max-w-2xl mx-auto">
+          <Card className="glass-card">
+            <CardHeader>
+              <CardTitle className="text-lg font-heading">Personal Information</CardTitle>
+              <p className="text-sm text-muted-foreground">Your registered personal details</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Full Name</label>
+                  <p className="text-sm">
+                    {citizenData.first_name || ''} {citizenData.middle_name || ''} {citizenData.last_name || ''} {citizenData.suffix || ''}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Email</label>
+                  <p className="text-sm">{citizenData.email || 'Not provided'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Phone</label>
+                  <p className="text-sm">{citizenData.phone || 'Not provided'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Address</label>
+                  <p className="text-sm">{citizenData.address || 'Not provided'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Barangay</label>
+                  <p className="text-sm">{citizenData.barangay || 'Not provided'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Zip Code</label>
+                  <p className="text-sm">{citizenData.zip_code || 'Not provided'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Gender</label>
+                  <p className="text-sm">{citizenData.gender || 'Not provided'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Civil Status</label>
+                  <p className="text-sm">{citizenData.civil_status || 'Not provided'}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

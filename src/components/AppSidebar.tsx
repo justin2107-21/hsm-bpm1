@@ -78,6 +78,7 @@ const bhwSections: NavSection[] = [
     label: "Citizen Service Assistance",
     items: [
       { title: "Citizen Service Assistance", url: "/citizen-service-assistance", icon: ScanLine },
+      { title: "Citizen Search", url: "/staff/search-citizens", icon: UserSearch },
     ],
   },
   {
@@ -176,7 +177,7 @@ export function AppSidebar() {
         items: [
           { title: "Scan QR Citizen ID", url: "/staff/scan-qr", icon: ScanLine },
           { title: "Citizen Registration", url: "/staff/citizen-registration", icon: UserPlus },
-          { title: "Citizen Search", url: "/staff/scan-qr", icon: UserSearch },
+          { title: "Citizen Search", url: "/staff/search-citizens", icon: UserSearch },
         ],
       },
       {
@@ -296,6 +297,7 @@ export function AppSidebar() {
           { title: "Vaccination Coverage", url: "/lgu/vaccination", icon: Syringe },
           { title: "Active Inspections", url: "/lgu/sanitation", icon: ClipboardCheck },
           { title: "Establishment Compliance", url: "/lgu/sanitation", icon: Building2 },
+          { title: "Citizen Search", url: "/staff/search-citizens", icon: UserSearch },
         ],
       },
       { label: "Reports & Analytics", items: [{ title: "Municipal Analytics", url: "/lgu/analytics", icon: BarChart3 }] },
@@ -310,6 +312,7 @@ export function AppSidebar() {
           { title: "Create / Edit Users", url: "/sys/users", icon: UserPlus },
           { title: "Assign Roles", url: "/sys/users", icon: Users },
           { title: "User Activity Logs", url: "/sys/logs", icon: FileText },
+          { title: "Citizen Search", url: "/staff/search-citizens", icon: UserSearch },
         ],
       },
       {

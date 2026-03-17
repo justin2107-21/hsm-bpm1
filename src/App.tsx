@@ -48,6 +48,7 @@ import HealthServices from "@/pages/citizen/HealthServices";
 import VaccinationNutrition from "@/pages/citizen/VaccinationNutrition";
 import DiseaseReporting from "@/pages/citizen/DiseaseReporting";
 import SanitationComplaints from "@/pages/citizen/SanitationComplaints";
+import CitizenSearchPage from "@/pages/citizen/CitizenSearchPage";
 import MyEstablishments from "@/pages/citizen/MyEstablishments";
 import SanitaryPermitApplication from "@/pages/citizen/SanitaryPermitApplication";
 import InspectionStatus from "@/pages/citizen/InspectionStatus";
@@ -58,16 +59,24 @@ import ServiceRequests from "@/pages/citizen/ServiceRequests";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
+  const { user, loading, roleLoading } = useAuth();
+  if (loading || roleLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
   if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 };
 
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
+  const { user, loading, roleLoading } = useAuth();
+  if (loading || roleLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
   if (user) return <Navigate to="/" replace />;
+  return <>{children}</>;
+};
+
+const ProtectedRoleRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) => {
+  const { user, loading, roleLoading, currentRole } = useAuth();
+  if (loading || roleLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!allowedRoles.includes(currentRole)) return <Navigate to="/" replace />;
   return <>{children}</>;
 };
 
@@ -110,6 +119,11 @@ const App = () => (
               <Route path="/staff/assessments" element={<StaffAssessments />} />
               <Route path="/staff/permit-verification" element={<StaffPermitVerification />} />
               <Route path="/staff/citizen-registration" element={<StaffCitizenRegistration />} />
+              <Route path="/staff/search-citizens" element={
+                <ProtectedRoleRoute allowedRoles={["BHW_User", "Clerk_User", "LGUAdmin_User", "SysAdmin_User"]}>
+                  <CitizenSearchPage />
+                </ProtectedRoleRoute>
+              } />
               {/* BHW routes */}
               <Route path="/citizen-service-assistance" element={<CitizenAssistance />} />
               {/* Backward compatibility for older links */}
