@@ -23,7 +23,7 @@ const ReportsComplaints = () => {
       icon: ShieldAlert,
       color: "text-red-500",
       bgColor: "bg-red-50 dark:bg-red-950/20",
-      action: () => navigate("/reports-complaints/disease")
+      action: () => navigate("/citizen/disease-reporting")
     },
     {
       id: "sanitation",
@@ -32,7 +32,7 @@ const ReportsComplaints = () => {
       icon: MessageSquare,
       color: "text-orange-500",
       bgColor: "bg-orange-50 dark:bg-orange-950/20",
-      action: () => navigate("/reports-complaints/sanitation")
+      action: () => navigate("/citizen/sanitation-complaints")
     },
     {
       id: "wastewater",
@@ -41,7 +41,7 @@ const ReportsComplaints = () => {
       icon: Droplets,
       color: "text-blue-500",
       bgColor: "bg-blue-50 dark:bg-blue-950/20",
-      action: () => navigate("/reports-complaints/wastewater")
+      action: () => navigate("/citizen/wastewater-concerns")
     },
     {
       id: "environmental",
@@ -50,7 +50,7 @@ const ReportsComplaints = () => {
       icon: TreePine,
       color: "text-green-500",
       bgColor: "bg-green-50 dark:bg-green-950/20",
-      action: () => navigate("/reports-complaints/environmental")
+      action: () => navigate("/citizen/environmental-concerns")
     },
     {
       id: "other",
@@ -59,7 +59,7 @@ const ReportsComplaints = () => {
       icon: HelpCircle,
       color: "text-purple-500",
       bgColor: "bg-purple-50 dark:bg-purple-950/20",
-      action: () => navigate("/reports-complaints/other")
+      action: () => navigate("/citizen/disease-reporting")
     }
   ];
 

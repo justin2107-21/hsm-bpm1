@@ -11,13 +11,42 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+
+const VACCINE_TYPES = [
+  "COVID-19",
+  "Measles",
+  "Polio",
+  "DPT",
+  "BCG",
+  "Hepatitis B",
+  "Yellow Fever",
+  "Tetanus",
+  "Influenza",
+  "Pneumococcal",
+  "HPV",
+  "Varicella",
+  "Rotavirus",
+];
+
+const HEALTH_CENTERS = [
+  "Barangay Health Center",
+  "District Health Center",
+  "City Hospital",
+  "Vaccination Clinic",
+  "Mobile Vaccination Unit",
+];
 
 const VaccinationNutrition = () => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [detailModal, setDetailModal] = useState(false);
+  const [selectedVaccination, setSelectedVaccination] = useState<any>(null);
   const [form, setForm] = useState({
     vaccine_type: "",
+    child_name: "",
     preferred_date: "",
     preferred_center: "",
     notes: "",
@@ -27,33 +56,66 @@ const VaccinationNutrition = () => {
   const { data: vaccinations = [] } = useQuery({
     queryKey: ["citizen_vaccinations", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("vaccinations").select("*").order("vaccination_date", { ascending: false });
+      const { data, error } = await (supabase as any)
+        .from("vaccinations")
+        .select("*")
+        .eq("user_id", user!.id)
+        .order("vaccination_date", { ascending: false });
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: !!user,
   });
 
+  const { data: vaccinationSchedules = [] } = useQuery({
+    queryKey: ["vaccination_schedules"],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/.netlify/functions/get-vaccination-schedules');
+        if (!response.ok) throw new Error('Failed to fetch schedules');
+        const result = await response.json();
+        return result.data || [];
+      } catch (err) {
+        console.error('Error fetching schedules:', err);
+        return [];
+      }
+    },
+  });
+
   const requestMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("service_requests").insert({
-        user_id: user!.id,
-        request_type: "Vaccination Appointment",
-        title: `Vaccination request — ${form.vaccine_type || "Unspecified vaccine"}`,
-        description: `Preferred date: ${form.preferred_date || "Any"}; Preferred health center: ${
-          form.preferred_center || "Any"
-        }${form.notes ? `; Notes: ${form.notes}` : ""}`,
-        status: "Submitted",
-      });
-      if (error) throw error;
+      try {
+        const response = await fetch('/.netlify/functions/submit-vaccination', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: user!.id,
+            child_name: form.child_name,
+            vaccine: form.vaccine_type,
+            preferred_date: form.preferred_date,
+            health_center: form.preferred_center,
+            notes: form.notes,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to submit vaccination request');
+        }
+
+        return await response.json();
+      } catch (err: any) {
+        console.error("Error submitting vaccination request:", err);
+        throw err;
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["citizen_service_requests", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["citizen_vaccinations", user?.id] });
       setOpen(false);
-      setForm({ vaccine_type: "", preferred_date: "", preferred_center: "", notes: "" });
+      setForm({ vaccine_type: "", child_name: "", preferred_date: "", preferred_center: "", notes: "" });
       toast.success("Vaccination appointment request submitted");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message || "Failed to submit vaccination request"),
   });
 
   const scheduled = vaccinations.filter(v => v.status === "scheduled");
@@ -78,29 +140,57 @@ const VaccinationNutrition = () => {
             </DialogHeader>
             <div className="grid gap-3">
               <div>
-                <Label className="text-xs">Vaccine Type</Label>
+                <Label className="text-xs">Child Name *</Label>
                 <Input
-                  value={form.vaccine_type}
-                  onChange={(e) => setForm({ ...form, vaccine_type: e.target.value })}
-                  placeholder="e.g., Measles, COVID-19"
+                  value={form.child_name}
+                  onChange={(e) => setForm({ ...form, child_name: e.target.value })}
+                  placeholder="Enter child's name"
                 />
+              </div>
+              <div>
+                <Label className="text-xs">Vaccine Type *</Label>
+                <Select value={form.vaccine_type} onValueChange={(value) => setForm({ ...form, vaccine_type: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select vaccine type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VACCINE_TYPES.map((vaccine) => (
+                      <SelectItem key={vaccine} value={vaccine}>
+                        {vaccine}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs">Preferred Date</Label>
                   <Input
                     type="date"
+                    min={new Date().toISOString().split('T')[0]}
                     value={form.preferred_date}
                     onChange={(e) => setForm({ ...form, preferred_date: e.target.value })}
+                    className="light:text-foreground dark:text-foreground"
+                    style={{
+                      colorScheme: 'light dark',
+                      accentColor: 'currentColor',
+                    }}
                   />
                 </div>
                 <div>
                   <Label className="text-xs">Preferred Health Center</Label>
-                  <Input
-                    value={form.preferred_center}
-                    onChange={(e) => setForm({ ...form, preferred_center: e.target.value })}
-                    placeholder="e.g., Barangay Health Center"
-                  />
+                  <Select value={form.preferred_center} onValueChange={(value) => setForm({ ...form, preferred_center: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select health center" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {HEALTH_CENTERS.map((center) => (
+                        <SelectItem key={center} value={center}>
+                          {center}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div>
@@ -115,16 +205,72 @@ const VaccinationNutrition = () => {
               <Button
                 className="w-full"
                 onClick={() => requestMutation.mutate()}
-                disabled={requestMutation.isPending || !form.vaccine_type}
+                disabled={requestMutation.isPending || !form.vaccine_type || !form.child_name}
               >
                 {requestMutation.isPending ? "Submitting..." : "Submit Vaccination Request"}
               </Button>
             </div>
           </DialogContent>
         </Dialog>
-        <Button variant="outline" size="sm" className="gap-1">
-          <Calendar className="h-4 w-4" /> Vaccination Schedule
-        </Button>
+        <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1">
+              <Calendar className="h-4 w-4 text-foreground dark:text-foreground" /> Vaccination Schedule
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="font-heading text-sm">Available Vaccination Schedules</DialogTitle>
+            </DialogHeader>
+            {vaccinationSchedules.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">No vaccination schedules available</p>
+            ) : (
+              <div className="space-y-3">
+                {vaccinationSchedules.map((schedule: any) => (
+                  <Card key={schedule.id} className="glass-card">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm">{schedule.vaccine}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        {schedule.barangay && (
+                          <div>
+                            <p className="text-muted-foreground">Barangay</p>
+                            <p className="font-medium">{schedule.barangay}</p>
+                          </div>
+                        )}
+                        {schedule.schedule_date && (
+                          <div>
+                            <p className="text-muted-foreground">Schedule Date</p>
+                            <p className="font-medium">{schedule.schedule_date}</p>
+                          </div>
+                        )}
+                        {schedule.schedule_time && (
+                          <div>
+                            <p className="text-muted-foreground">Schedule Time</p>
+                            <p className="font-medium">{schedule.schedule_time}</p>
+                          </div>
+                        )}
+                        {schedule.health_center_location && (
+                          <div>
+                            <p className="text-muted-foreground">Health Center</p>
+                            <p className="font-medium">{schedule.health_center_location}</p>
+                          </div>
+                        )}
+                        {schedule.assigned_bhw && (
+                          <div>
+                            <p className="text-muted-foreground">Assigned BHW</p>
+                            <p className="font-medium">{schedule.assigned_bhw}</p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -158,6 +304,7 @@ const VaccinationNutrition = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="text-xs">Reference ID</TableHead>
                   <TableHead className="text-xs">Date</TableHead>
                   <TableHead className="text-xs">Vaccine</TableHead>
                   <TableHead className="text-xs">Child</TableHead>
@@ -167,7 +314,15 @@ const VaccinationNutrition = () => {
               </TableHeader>
               <TableBody>
                 {vaccinations.map((v) => (
-                  <TableRow key={v.id}>
+                  <TableRow 
+                    key={v.id} 
+                    className="cursor-pointer hover:bg-accent/50"
+                    onClick={() => {
+                      setSelectedVaccination(v);
+                      setDetailModal(true);
+                    }}
+                  >
+                    <TableCell className="text-xs font-mono text-muted-foreground">{v.id}</TableCell>
                     <TableCell className="text-sm">{v.vaccination_date}</TableCell>
                     <TableCell className="text-sm">{v.vaccine}</TableCell>
                     <TableCell className="text-sm">{v.child_name}</TableCell>
@@ -180,6 +335,54 @@ const VaccinationNutrition = () => {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={detailModal} onOpenChange={setDetailModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-sm">Vaccination Record Details</DialogTitle>
+          </DialogHeader>
+          {selectedVaccination && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Reference ID</p>
+                  <p className="text-sm font-mono">{selectedVaccination.id}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Date</p>
+                  <p className="text-sm">{selectedVaccination.vaccination_date}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Vaccine</p>
+                  <p className="text-sm">{selectedVaccination.vaccine}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Child Name</p>
+                  <p className="text-sm">{selectedVaccination.child_name}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">BHW Name</p>
+                  <p className="text-sm">{selectedVaccination.bhw_name}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Status</p>
+                  <div className="mt-1"><StatusBadge status={selectedVaccination.status} /></div>
+                </div>
+              </div>
+              {selectedVaccination.notes && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">Notes</p>
+                  <p className="text-sm">{selectedVaccination.notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

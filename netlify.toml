@@ -18,6 +18,11 @@
   force = true
 
 # Set up environment variables for both local and production
+[build.environment]
+  CIE_SUPABASE_URL = "https://tjcwwocpkpmhtdtlsiuc.supabase.co"
+  CIE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRqY3d3b2Nwa3BtaHRkdGxzaXVjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDYxOTczNiwiZXhwIjoyMDg2MTk1NzM2fQ.Yv7Q0pcs5tx-JBWcsPzIemj_RoYj1MF87ca_DbqKmMY"
+  HSM_SUPABASE_URL = "https://zrwmxtsuxcsxjhvcbktg.supabase.co"
+  HSM_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpyd214dHN1eGNzeGpodmNia3RnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzQwODI2MiwiZXhwIjoyMDg4OTg0MjYyfQ.SRfIX3bKY6Dc71650PaXvy-e80UugHUKWXWAsSXwoAE"
 [context.production.environment]
   CIE_SUPABASE_URL = "https://tjcwwocpkpmhtdtlsiuc.supabase.co"
   CIE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRqY3d3b2Nwa3BtaHRkdGxzaXVjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDYxOTczNiwiZXhwIjoyMDg2MTk1NzM2fQ.Yv7Q0pcs5tx-JBWcsPzIemj_RoYj1MF87ca_DbqKmMY"

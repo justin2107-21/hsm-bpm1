@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -490,120 +491,132 @@ interface ServiceDetailModalProps {
   onClose: () => void;
   onRequest: (service: any) => void;
   category: string;
+  isRequesting?: boolean;
+  setIsRequesting?: (val: boolean) => void;
+  scheduledDate?: string;
+  setScheduledDate?: (date: string) => void;
+  scheduledTime?: string;
+  setScheduledTime?: (time: string) => void;
 }
 
-const ServiceDetailModal = ({ service, onClose, onRequest, category }: ServiceDetailModalProps) => {
+const ServiceDetailModal = ({ service, onClose, onRequest, category, isRequesting, setIsRequesting, scheduledDate, setScheduledDate, scheduledTime, setScheduledTime }: ServiceDetailModalProps) => {
   const IconComponent = service.icon;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="w-full max-w-2xl max-h-[calc(100vh-4rem)] overflow-auto">
+    <Dialog open={Boolean(service)} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md w-full p-0">
         <Card className="overflow-hidden">
-          <div className="sticky top-0 bg-card border-b p-6 flex flex-row items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <IconComponent className="h-6 w-6 text-primary" />
+          <div className="flex items-center justify-between gap-3 border-b p-4">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-primary/10 rounded">
+                <IconComponent className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold">{service.title}</h2>
+                <DialogTitle className="text-sm font-semibold">{service.title}</DialogTitle>
                 {service.private && (
-                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                    🔒 Strictly Confidential
-                  </p>
+                  <DialogDescription className="text-xs text-muted-foreground">🔒 Confidential</DialogDescription>
                 )}
               </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
           </div>
-          <CardContent className="space-y-6 p-6">
-            {/* Modal Sections (if provided) */}
-            {service.modalSections ? (
-              <div className="space-y-6">
-                {service.modalSections.map((section: any, idx: number) => (
-                  <div key={idx}>
-                    <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                      <CheckCircle className="h-5 w-5 text-primary" />
-                      {section.title}
-                    </h3>
-                    {section.content && (
-                      <p className="text-sm text-muted-foreground">{section.content}</p>
-                    )}
-                    {section.items && (
-                      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                        {section.items.map((item: string, itemIdx: number) => (
-                          <li key={itemIdx}>{item}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
+
+          <CardContent className="space-y-4 p-4">
+            {!isRequesting ? (
               <>
-                {/* About Service */}
                 <div>
-                  <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-primary" />
-                    About This Service
-                  </h3>
-                  <p className="text-sm text-muted-foreground">{service.fullDescription}</p>
+                  <p className="text-sm text-muted-foreground">{service.fullDescription || service.description}</p>
                 </div>
 
-                {/* Who Should Avail */}
                 {service.whoShouldAvail && (
                   <div>
-                    <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                      <Users className="h-5 w-5 text-primary" />
-                      Who Should Avail
-                    </h3>
+                    <h3 className="font-semibold text-sm mb-1">Who can avail:</h3>
                     <p className="text-sm text-muted-foreground">{service.whoShouldAvail}</p>
                   </div>
                 )}
 
-                {/* Schedule */}
                 {service.schedule && (
                   <div>
-                    <h3 className="font-semibold text-sm mb-2">📅 Schedule</h3>
+                    <h3 className="font-semibold text-sm mb-1">Schedule:</h3>
                     <p className="text-sm">{service.schedule}</p>
                   </div>
                 )}
 
+                {service.locations && service.locations.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold text-sm mb-2">Locations:</h3>
+                    <div className="space-y-2">
+                      {service.locations.slice(0, 2).map((location: any, idx: number) => (
+                        <div key={idx} className="text-sm p-2 bg-muted rounded">
+                          <p className="font-medium text-xs">{location.name}</p>
+                          {location.schedule && (
+                            <p className="text-xs text-muted-foreground">{location.schedule}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <Button
+                  onClick={() => setIsRequesting?.(true)}
+                  className="w-full h-10 text-sm font-semibold"
+                >
+                  {service.action || "Request Service"}
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="space-y-3 bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <h3 className="font-semibold text-sm">📅 Preferred Schedule (Optional)</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Date</Label>
+                      <Input
+                        type="date"
+                        min={new Date().toISOString().split('T')[0]}
+                        value={scheduledDate}
+                        onChange={(e) => setScheduledDate?.(e.target.value)}
+                        className="h-9 text-sm"
+                        style={{
+                          colorScheme: 'light dark',
+                          accentColor: 'currentColor',
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Time</Label>
+                      <Input
+                        type="time"
+                        value={scheduledTime}
+                        onChange={(e) => setScheduledTime?.(e.target.value)}
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Leave blank if you don't have a preferred schedule</p>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsRequesting?.(false)}
+                    className="flex-1 h-10"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    onClick={() => onRequest(service)}
+                    className="flex-1 h-10 bg-primary hover:bg-primary/90"
+                  >
+                    Confirm Request
+                  </Button>
+                </div>
               </>
             )}
-
-            {/* Available At (always shown when locations exist) */}
-            {service.locations && (
-              <div>
-                <h3 className="font-semibold text-sm mb-2">📍 Available At</h3>
-                <div className="space-y-3">
-                  {service.locations.map((location: any, idx: number) => (
-                    <div key={idx} className="text-sm p-3 bg-muted rounded">
-                      <p className="font-semibold">{location.name}</p>
-                      {location.address && (
-                        <p className="text-muted-foreground">{location.address}</p>
-                      )}
-                      {location.schedule && (
-                        <p className="text-xs text-muted-foreground mt-1">{location.schedule}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Action Button */}
-            <Button 
-              onClick={() => onRequest(service)}
-              className="w-full h-14 text-base font-semibold"
-            >
-              {service.action || "Request Service"}
-            </Button>
           </CardContent>
         </Card>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -611,67 +624,118 @@ interface PWDServiceDetailModalProps {
   service: any;
   onClose: () => void;
   onRequest: (service: any) => void;
+  isRequesting?: boolean;
+  setIsRequesting?: (val: boolean) => void;
+  scheduledDate?: string;
+  setScheduledDate?: (date: string) => void;
+  scheduledTime?: string;
+  setScheduledTime?: (time: string) => void;
 }
 
-const PWDServiceDetailModal = ({ service, onClose, onRequest }: PWDServiceDetailModalProps) => {
+const PWDServiceDetailModal = ({ service, onClose, onRequest, isRequesting, setIsRequesting, scheduledDate, setScheduledDate, scheduledTime, setScheduledTime }: PWDServiceDetailModalProps) => {
   const IconComponent = service.icon;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="w-full max-w-2xl max-h-[calc(100vh-4rem)] overflow-auto">
+    <Dialog open={Boolean(service)} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md w-full p-0">
         <Card className="overflow-hidden">
-          <div className="sticky top-0 bg-card border-b p-6 flex flex-row items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
-                <IconComponent className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+          <div className="flex items-center justify-between gap-3 border-b p-4">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-orange-100 dark:bg-orange-900 rounded">
+                <IconComponent className="h-4 w-4 text-orange-600 dark:text-orange-400" />
               </div>
-              <h2 className="text-xl font-semibold">{service.title}</h2>
+              <div>
+                <DialogTitle className="text-sm font-semibold">{service.title}</DialogTitle>
+              </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
           </div>
-          <CardContent className="space-y-6 p-6">
-            <div>
-              <h3 className="font-semibold text-base mb-2">What is this benefit?</h3>
-              <p className="text-sm text-muted-foreground">
-                {service.fullDescription || service.description}
-              </p>
-            </div>
 
-            {/* Required Documents */}
-            <div>
-              <h3 className="font-semibold text-base mb-3 flex items-center gap-2">
-                📋 Required Documents
-              </h3>
-              <ul className="space-y-2">
-                {service.requirements.map((req: string, idx: number) => (
-                  <li key={idx} className="flex items-start gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>{req}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          <CardContent className="space-y-4 p-4">
+            {!isRequesting ? (
+              <>
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    {service.fullDescription || service.description}
+                  </p>
+                </div>
 
-            {/* Where to Claim */}
-            <div>
-              <h3 className="font-semibold text-base mb-2 flex items-center gap-2">
-                📍 Where to Claim
-              </h3>
-              <p className="text-sm p-3 bg-muted rounded">{service.claimLocation}</p>
-            </div>
+                <div>
+                  <h3 className="font-semibold text-sm mb-2">Required documents:</h3>
+                  <ul className="space-y-1">
+                    {service.requirements.map((req: string, idx: number) => (
+                      <li key={idx} className="flex items-start gap-2 text-sm">
+                        <CheckCircle className="h-3 w-3 text-primary mt-0.5 flex-shrink-0" />
+                        <span>{req}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
-            <Button 
-              onClick={() => onRequest(service)}
-              className="w-full h-14 text-base font-semibold"
-            >
-              Request Assistance
-            </Button>
+                <div>
+                  <h3 className="font-semibold text-sm mb-1">Where to claim:</h3>
+                  <p className="text-sm p-2 bg-muted rounded">{service.claimLocation}</p>
+                </div>
+
+                <Button
+                  onClick={() => setIsRequesting?.(true)}
+                  className="w-full h-10 text-sm font-semibold"
+                >
+                  Request Assistance
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="space-y-3 bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <h3 className="font-semibold text-sm">📅 Preferred Schedule (Optional)</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Date</Label>
+                      <Input
+                        type="date"
+                        min={new Date().toISOString().split('T')[0]}
+                        value={scheduledDate}
+                        onChange={(e) => setScheduledDate?.(e.target.value)}
+                        className="h-9 text-sm"
+                        style={{
+                          colorScheme: 'light dark',
+                          accentColor: 'currentColor',
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Time</Label>
+                      <Input
+                        type="time"
+                        value={scheduledTime}
+                        onChange={(e) => setScheduledTime?.(e.target.value)}
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Leave blank if you don't have a preferred schedule</p>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsRequesting?.(false)}
+                    className="flex-1 h-10"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    onClick={() => onRequest(service)}
+                    className="flex-1 h-10 bg-primary hover:bg-primary/90"
+                  >
+                    Confirm Request
+                  </Button>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -767,7 +831,17 @@ const HealthServicesHub = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [requestingService, setRequestingService] = useState<any>(null);
   const [showAssistanceModal, setShowAssistanceModal] = useState(false);
+  const [isRequestingFlow, setIsRequestingFlow] = useState(false);
+  const [scheduledDate, setScheduledDate] = useState("");
+  const [scheduledTime, setScheduledTime] = useState("");
   const queryClient = useQueryClient();
+
+  const closeServiceModal = () => {
+    setSelectedService(null);
+    setIsRequestingFlow(false);
+    setScheduledDate("");
+    setScheduledTime("");
+  };
 
   const isModalOpen = Boolean(selectedService || showHelpModal || showAssistanceModal);
   const bodyOverflow = useRef<string>("");
@@ -792,20 +866,39 @@ const HealthServicesHub = () => {
 
   const requestMutation = useMutation({
     mutationFn: async (service: any) => {
-      const { error } = await supabase.from("service_requests").insert({
-        user_id: user!.id,
-        request_type: "Health Service",
-        title: `Request for ${service.title}`,
-        description: `Citizen requested: ${service.title}`,
-        status: "Pending",
+      const response = await fetch('/api/request-service', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: user!.id,
+          request_type: "Health Service",
+          title: `Request for ${service.title}`,
+          description: `Citizen requested: ${service.title}`,
+          status: "submitted",
+          scheduled_date: scheduledDate || null,
+          scheduled_time: scheduledTime || null,
+        }),
       });
-      if (error) throw error;
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('🔍 Request service error response:', error);
+        const errorMsg = error.details || error.error || 'Failed to submit request';
+        throw new Error(errorMsg);
+      }
+
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["citizen_service_requests", user?.id] });
       setSelectedService(null);
       setShowConfirmation(true);
       setTimeout(() => setShowConfirmation(false), 3000);
+      setIsRequestingFlow(false);
+      setScheduledDate("");
+      setScheduledTime("");
 
       if (requestingService?.category === "senior" || requestingService?.isPWD) {
         setShowAssistanceModal(true);
@@ -813,7 +906,10 @@ const HealthServicesHub = () => {
 
       toast.success("Request submitted successfully!");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      console.error('❌ Mutation error:', e.message);
+      toast.error("Error: " + e.message);
+    },
   });
 
   const handleRequestService = (service: any) => {
@@ -845,20 +941,19 @@ const HealthServicesHub = () => {
     visibleSenior.length > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4 md:p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen">
+      <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
         <div className="space-y-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-            <div className="flex-1">
-              <h1 className="text-xl md:text-2xl font-bold font-heading">Health Services</h1>
-              <p className="text-sm text-muted-foreground mt-1">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold font-heading">Health Services</h1>
+              <p className="text-sm text-muted-foreground">
                 Explore services, programs, and benefits available at your local health center.
               </p>
             </div>
             <Button 
               variant="outline" 
-              size="md"
               onClick={() => setShowHelpModal(true)}
               className="gap-2 h-14 px-5 rounded-lg bg-green-50 text-green-900 dark:bg-emerald-600 dark:text-white hover:bg-green-100 dark:hover:bg-emerald-500"
             >
@@ -927,7 +1022,12 @@ const HealthServicesHub = () => {
                     <ServiceCard
                       key={service.id}
                       service={service}
-                      onClick={() => setSelectedService({ ...service, category: "primary" })}
+                      onClick={() => {
+                        setSelectedService({ ...service, category: "primary" });
+                        setIsRequestingFlow(false);
+                        setScheduledDate("");
+                        setScheduledTime("");
+                      }}
                     />
                   ))}
                 </div>
@@ -951,7 +1051,12 @@ const HealthServicesHub = () => {
                     <ServiceCard
                       key={service.id}
                       service={service}
-                      onClick={() => setSelectedService({ ...service, category: "preventive" })}
+                      onClick={() => {
+                        setSelectedService({ ...service, category: "preventive" });
+                        setIsRequestingFlow(false);
+                        setScheduledDate("");
+                        setScheduledTime("");
+                      }}
                     />
                   ))}
                 </div>
@@ -975,7 +1080,12 @@ const HealthServicesHub = () => {
                     <ServiceCard
                       key={service.id}
                       service={service}
-                      onClick={() => setSelectedService({ ...service, category: "specialized" })}
+                      onClick={() => {
+                        setSelectedService({ ...service, category: "specialized" });
+                        setIsRequestingFlow(false);
+                        setScheduledDate("");
+                        setScheduledTime("");
+                      }}
                     />
                   ))}
                 </div>
@@ -999,7 +1109,12 @@ const HealthServicesHub = () => {
                     <PWDCard
                       key={service.id}
                       service={service}
-                      onClick={() => setSelectedService({ ...service, category: "senior", isPWD: true })}
+                      onClick={() => {
+                        setSelectedService({ ...service, category: "senior", isPWD: true });
+                        setIsRequestingFlow(false);
+                        setScheduledDate("");
+                        setScheduledTime("");
+                      }}
                     />
                   ))}
                 </div>
@@ -1025,125 +1140,127 @@ const HealthServicesHub = () => {
           <ServiceDetailModal
             service={selectedService}
             category={selectedService.category}
-            onClose={() => setSelectedService(null)}
+            onClose={closeServiceModal}
             onRequest={handleRequestService}
+            isRequesting={isRequestingFlow}
+            setIsRequesting={setIsRequestingFlow}
+            scheduledDate={scheduledDate}
+            setScheduledDate={setScheduledDate}
+            scheduledTime={scheduledTime}
+            setScheduledTime={setScheduledTime}
           />
         )}
 
         {selectedService && selectedService.isPWD && (
           <PWDServiceDetailModal
             service={selectedService}
-            onClose={() => setSelectedService(null)}
+            onClose={closeServiceModal}
             onRequest={handleRequestService}
+            isRequesting={isRequestingFlow}
+            setIsRequesting={setIsRequestingFlow}
+            scheduledDate={scheduledDate}
+            setScheduledDate={setScheduledDate}
+            scheduledTime={scheduledTime}
+            setScheduledTime={setScheduledTime}
           />
         )}
 
         {/* Help Modal */}
-        {showHelpModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="w-full max-w-md max-h-[calc(100vh-4rem)] overflow-auto">
-              <Card className="overflow-hidden">
-                <div className="p-6 border-b flex flex-row items-center justify-between">
-                  <div className="text-sm font-semibold flex items-center gap-2">
-                    <HelpCircle className="h-5 w-5" />
-                    How To Use This Page
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => setShowHelpModal(false)}>
-                    <X className="h-4 w-4" />
-                  </Button>
+        <Dialog open={showHelpModal} onOpenChange={(open) => !open && setShowHelpModal(false)}>
+          <DialogContent className="max-w-md w-full p-0">
+            <Card className="overflow-hidden">
+              <div className="p-6 border-b flex flex-row items-center justify-between">
+                <div className="text-sm font-semibold flex items-center gap-2">
+                  <HelpCircle className="h-5 w-5" />
+                  How To Use This Page
                 </div>
-                <CardContent className="space-y-4 p-6">
-                  <p className="text-sm font-medium text-muted-foreground">Simple guide for first-time users</p>
-                  <div className="space-y-3">
-                    <div className="flex gap-3">
-                      <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">1</div>
-                      <div>
-                        <p className="font-semibold">Find Your Service</p>
-                        <p className="text-xs text-muted-foreground">Use the search bar or tap on a category button to find the health service you need.</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                      <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">2</div>
-                      <div>
-                        <p className="font-semibold">Tap on the Service</p>
-                        <p className="text-xs text-muted-foreground">Tap or click on the service card to view more details, available locations, and schedules.</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                      <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">3</div>
-                      <div>
-                        <p className="font-semibold">Request an Appointment</p>
-                        <p className="text-xs text-muted-foreground">Tap the button at the bottom of the service page to request an appointment or join a program.</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                      <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">4</div>
-                      <div>
-                        <p className="font-semibold">Wait for Confirmation</p>
-                        <p className="text-xs text-muted-foreground">Your request will be recorded. You will receive confirmation about your appointment schedule.</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                      <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">5</div>
-                      <div>
-                        <p className="font-semibold">Visit the Health Center</p>
-                        <p className="text-xs text-muted-foreground">Go to the health center on the scheduled time. Bring a valid ID and any required documents.</p>
-                      </div>
+              </div>
+              <CardContent className="space-y-4 p-6">
+                <p className="text-sm font-medium text-muted-foreground">Simple guide for first-time users</p>
+                <div className="space-y-3">
+                  <div className="flex gap-3">
+                    <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">1</div>
+                    <div>
+                      <p className="font-semibold">Find Your Service</p>
+                      <p className="text-xs text-muted-foreground">Use the search bar or tap on a category button to find the health service you need.</p>
                     </div>
                   </div>
-                  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded p-3">
-                    <p className="text-xs text-blue-900 dark:text-blue-100">
-                      Need more help? Visit any health center and ask a staff member to assist you with using this system. We are happy to help!
-                    </p>
+                  <div className="flex gap-3">
+                    <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">2</div>
+                    <div>
+                      <p className="font-semibold">Tap on the Service</p>
+                      <p className="text-xs text-muted-foreground">Tap or click on the service card to view more details, available locations, and schedules.</p>
+                    </div>
                   </div>
-                </CardContent>
-                <div className="p-6 border-t">
-                  <Button onClick={() => setShowHelpModal(false)} className="w-full">
-                    Got It, Thanks!
-                  </Button>
+                  <div className="flex gap-3">
+                    <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">3</div>
+                    <div>
+                      <p className="font-semibold">Request an Appointment</p>
+                      <p className="text-xs text-muted-foreground">Tap the button at the bottom of the service page to request an appointment or join a program.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">4</div>
+                    <div>
+                      <p className="font-semibold">Wait for Confirmation</p>
+                      <p className="text-xs text-muted-foreground">Your request will be recorded. You will receive confirmation about your appointment schedule.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex-shrink-0">5</div>
+                    <div>
+                      <p className="font-semibold">Visit the Health Center</p>
+                      <p className="text-xs text-muted-foreground">Go to the health center on the scheduled time. Bring a valid ID and any required documents.</p>
+                    </div>
+                  </div>
                 </div>
-              </Card>
-            </div>
-          </div>
-        )}
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded p-3">
+                  <p className="text-xs text-blue-900 dark:text-blue-100">
+                    Need more help? Visit any health center and ask a staff member to assist you with using this system. We are happy to help!
+                  </p>
+                </div>
+              </CardContent>
+              <div className="p-6 border-t">
+                <Button onClick={() => setShowHelpModal(false)} className="w-full">
+                  Got It, Thanks!
+                </Button>
+              </div>
+            </Card>
+          </DialogContent>
+        </Dialog>
 
         {/* Assistance Confirmation Modal */}
-        {showAssistanceModal && requestingService && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="w-full max-w-md max-h-[calc(100vh-4rem)] overflow-auto">
-              <Card className="overflow-hidden">
-                <div className="p-6 border-b flex flex-row items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <div className="font-semibold">Assistance Request Submitted</div>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => setShowAssistanceModal(false)}>
-                    <X className="h-4 w-4" />
-                  </Button>
+        <Dialog open={showAssistanceModal && Boolean(requestingService)} onOpenChange={(open) => !open && setShowAssistanceModal(false)}>
+          <DialogContent className="max-w-md w-full p-0">
+            <Card className="overflow-hidden">
+              <div className="p-6 border-b flex flex-row items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <div className="font-semibold">Assistance Request Submitted</div>
                 </div>
-                <CardContent className="p-6 space-y-4">
-                  <p className="text-sm font-semibold">{requestingService.title}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Your request for assistance has been recorded. Please visit the health center with the required documents to complete the process.
-                  </p>
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold">What to do next:</p>
-                    <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                      <li>Wait for a confirmation message or call</li>
-                      <li>Prepare a valid ID before visiting</li>
-                      <li>Arrive 10–15 minutes before your schedule</li>
-                    </ul>
-                  </div>
-                </CardContent>
-                <div className="p-6 border-t">
-                  <Button onClick={() => setShowAssistanceModal(false)} className="w-full">
-                    Done
-                  </Button>
+              </div>
+              <CardContent className="p-6 space-y-4">
+                <p className="text-sm font-semibold">{requestingService?.title}</p>
+                <p className="text-sm text-muted-foreground">
+                  Your request for assistance has been recorded. Please visit the health center with the required documents to complete the process.
+                </p>
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold">What to do next:</p>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                    <li>Wait for a confirmation message or call</li>
+                    <li>Prepare a valid ID before visiting</li>
+                    <li>Arrive 10–15 minutes before your schedule</li>
+                  </ul>
                 </div>
-              </Card>
-            </div>
-          </div>
-        )}
+              </CardContent>
+              <div className="p-6 border-t">
+                <Button onClick={() => setShowAssistanceModal(false)} className="w-full">
+                  Done
+                </Button>
+              </div>
+            </Card>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

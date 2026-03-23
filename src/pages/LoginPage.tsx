@@ -71,7 +71,7 @@ const LoginPage = () => {
           </div>
           <div className="space-y-1.5">
             <h1 className="text-2xl font-semibold font-heading text-foreground tracking-tight">
-              HealthGuard Hub
+              Health & Sanitation Management
             </h1>
             <p className="text-sm text-muted-foreground">
               Unified health, sanitation, and surveillance portal for Quezon City.

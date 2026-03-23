@@ -49,44 +49,43 @@ const HealthServices = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold font-heading">Health Services</h1>
-          <p className="text-sm text-muted-foreground">View your health records and request consultations</p>
-        </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="gap-1">
-              <Plus className="h-4 w-4" /> Request Consultation
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="font-heading text-sm">Request Health Consultation</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-3">
-              <div>
-                <Label className="text-xs">Describe your health concern</Label>
-                <Textarea
-                  rows={3}
-                  placeholder="Briefly describe your symptoms or concern..."
-                  value={concern}
-                  onChange={(e) => setConcern(e.target.value)}
-                />
-              </div>
-              <Button
-                className="w-full"
-                onClick={() => requestMutation.mutate()}
-                disabled={requestMutation.isPending}
-              >
-                {requestMutation.isPending ? "Submitting..." : "Submit Consultation Request"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+      <div>
+        <h1 className="text-2xl font-bold font-heading">Health Services</h1>
+        <p className="text-sm text-muted-foreground">View your health records and request consultations</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button size="sm" className="gap-1">
+            <Plus className="h-4 w-4" /> Request Consultation
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-heading text-sm">Request Health Consultation</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div>
+              <Label className="text-xs">Describe your health concern</Label>
+              <Textarea
+                rows={3}
+                placeholder="Briefly describe your symptoms or concern..."
+                value={concern}
+                onChange={(e) => setConcern(e.target.value)}
+              />
+            </div>
+            <Button
+              className="w-full"
+              onClick={() => requestMutation.mutate()}
+              disabled={requestMutation.isPending}
+            >
+              {requestMutation.isPending ? "Submitting..." : "Submit Consultation Request"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
         <Card className="glass-card cursor-pointer hover:border-primary/30 transition-colors">
           <CardContent className="pt-6 text-center">
             <HeartPulse className="h-8 w-8 text-primary mx-auto mb-2" />

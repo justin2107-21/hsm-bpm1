@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import Layout from "@/components/Layout";
 import Dashboard from "@/pages/Dashboard";
 import CitizenDashboard from "@/pages/CitizenDashboard";
@@ -48,8 +49,7 @@ import CitizenQR from "@/pages/citizen/CitizenQR";
 import HealthServices from "@/pages/citizen/HealthServices";
 import HealthServicesHub from "@/pages/citizen/HealthServicesHub";
 import VaccinationNutrition from "@/pages/citizen/VaccinationNutrition";
-import DiseaseReporting from "@/pages/citizen/DiseaseReporting";
-import SanitationComplaints from "@/pages/citizen/SanitationComplaints";
+import CitizenReportsComplaints from "@/pages/citizen/CitizenReportsComplaints";
 import CitizenSearchPage from "@/pages/citizen/CitizenSearchPage";
 import MyEstablishments from "@/pages/citizen/MyEstablishments";
 import SanitaryPermitApplication from "@/pages/citizen/SanitaryPermitApplication";
@@ -101,9 +101,10 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+        <NotificationProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
           <Routes>
             <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
@@ -154,8 +155,8 @@ const App = () => (
               <Route path="/citizen/qr" element={<CitizenQR />} />
               <Route path="/citizen/health" element={<HealthServicesHub />} />
               <Route path="/citizen/vaccination" element={<VaccinationNutrition />} />
-              <Route path="/citizen/disease-reporting" element={<DiseaseReporting />} />
-              <Route path="/citizen/sanitation-complaints" element={<SanitationComplaints />} />
+              <Route path="/citizen/disease-reporting" element={<CitizenReportsComplaints />} />
+              <Route path="/citizen/sanitation-complaints" element={<CitizenReportsComplaints />} />
               <Route path="/citizen/establishments" element={<MyEstablishments />} />
               <Route path="/citizen/sanitary-permit" element={<SanitaryPermitApplication />} />
               <Route path="/citizen/inspections" element={<InspectionStatus />} />
@@ -167,6 +168,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        </NotificationProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

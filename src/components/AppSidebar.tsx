@@ -121,7 +121,7 @@ const citizenSections: NavSection[] = [
       { title: "My QR Citizen ID", url: "/citizen/qr", icon: QrCode },
       { title: "Health Services", url: "/citizen/health", icon: HeartPulse },
       { title: "Vaccination & Nutrition", url: "/citizen/vaccination", icon: Syringe },
-      { title: "Reports & Complaints", url: "/reports-complaints", icon: MessageSquare },
+      { title: "Reports & Complaints", url: "/citizen/disease-reporting", icon: MessageSquare },
       { title: "My Establishments", url: "/citizen/establishments", icon: Building2 },
     ],
   },

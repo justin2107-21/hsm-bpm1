@@ -11,10 +11,15 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
+import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 
 const CitizenDashboard = () => {
   const { user, currentRole, hasEstablishments, userName } = useAuth();
   const navigate = useNavigate();
+  
+  // Enable real-time notifications for citizen
+  useRealtimeNotifications(user?.id);
+  
   const citizenId = `GSMS-2026-${user?.id?.slice(0, 8).toUpperCase() || "00000000"}`;
   // Business features are available when the citizen owns at least one establishment
   const showBusinessSection = hasEstablishments;
@@ -49,7 +54,7 @@ const CitizenDashboard = () => {
   const { data: complaints = [] } = useQuery({
     queryKey: ["citizen_complaints_summary", user?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("sanitation_complaints").select("id, status, created_at, complaint_type").eq("user_id", user!.id).order("created_at", { ascending: false });
+      const { data } = await (supabase as any).from("sanitation_complaints").select("complaint_id as id, status, created_at, complaint_type").eq("citizen_id", user!.id).order("created_at", { ascending: false });
       return data || [];
     },
     enabled: !!user,
@@ -58,8 +63,8 @@ const CitizenDashboard = () => {
   const { data: vaccinationSchedules = [] } = useQuery({
     queryKey: ["citizen_vax_schedules", user?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("vaccination_schedules").select("id, vaccine_name, scheduled_date, status").eq("user_id", user!.id).order("scheduled_date", { ascending: false }).limit(3);
-      return data || [];
+      const { data } = await (supabase as any).from("vaccination_schedules").select("id, vaccine as vaccine_name, schedule_date as scheduled_date").order("schedule_date", { ascending: false }).limit(3);
+      return (data || []).map(item => ({ ...item, status: 'scheduled' }));
     },
     enabled: !!user,
   });

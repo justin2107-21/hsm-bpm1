@@ -120,6 +120,40 @@ const CitizenQR = () => {
     printWindow.print();
   };
 
+  const handleDownload = () => {
+    const svg = document.getElementById("citizen-qr-svg") as unknown as SVGSVGElement | null;
+    if (!svg) return;
+
+    // Convert SVG to canvas
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+
+      // Download canvas as PNG
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `citizen-qr-${citizenId}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 'image/png');
+    };
+    img.src = `data:image/svg+xml;base64,${btoa(svgData)}`;
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -191,7 +225,7 @@ const CitizenQR = () => {
               <p className="text-sm font-mono font-semibold">{citizenId}</p>
             </div>
             <div className="flex gap-2 w-full">
-              <Button variant="outline" size="sm" className="flex-1 gap-1">
+              <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={handleDownload}>
                 <Download className="h-4 w-4" /> Download
               </Button>
               <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={handlePrint}>
