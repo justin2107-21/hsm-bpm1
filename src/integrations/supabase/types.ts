@@ -588,37 +588,49 @@ export type Database = {
       }
       vaccinations: {
         Row: {
-          age: string | null
-          bhw_name: string | null
-          child_name: string
-          created_at: string
           id: string
-          recorded_by: string | null
-          status: string
-          vaccination_date: string
+          patient_name: string
+          user_id: string | null
+          age: string | null
           vaccine: string
+          vaccination_date: string
+          status: string
+          bhw_name: string | null
+          recorded_by: string | null
+          created_at: string
+          preferred_date: string | null
+          health_center: string | null
+          notes: string | null
         }
         Insert: {
-          age?: string | null
-          bhw_name?: string | null
-          child_name: string
-          created_at?: string
           id?: string
-          recorded_by?: string | null
-          status?: string
-          vaccination_date?: string
+          patient_name: string
+          user_id?: string | null
+          age?: string | null
           vaccine: string
+          vaccination_date?: string
+          status?: string
+          bhw_name?: string | null
+          recorded_by?: string | null
+          created_at?: string
+          preferred_date?: string | null
+          health_center?: string | null
+          notes?: string | null
         }
         Update: {
-          age?: string | null
-          bhw_name?: string | null
-          child_name?: string
-          created_at?: string
           id?: string
-          recorded_by?: string | null
-          status?: string
-          vaccination_date?: string
+          patient_name?: string
+          user_id?: string | null
+          age?: string | null
           vaccine?: string
+          vaccination_date?: string
+          status?: string
+          bhw_name?: string | null
+          recorded_by?: string | null
+          created_at?: string
+          preferred_date?: string | null
+          health_center?: string | null
+          notes?: string | null
         }
         Relationships: []
       }

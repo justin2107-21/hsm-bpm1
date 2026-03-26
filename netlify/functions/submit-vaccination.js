@@ -20,12 +20,12 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const { user_id, child_name, vaccine, preferred_date, health_center, notes } = JSON.parse(event.body);
+    const { user_id, patient_name, vaccine, preferred_date, health_center, notes } = JSON.parse(event.body);
     
-    if (!vaccine || !child_name) {
+    if (!vaccine || !patient_name) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Missing required fields: vaccine, child_name' }),
+        body: JSON.stringify({ error: 'Missing required fields: vaccine, patient_name' }),
       };
     }
 
@@ -36,7 +36,7 @@ exports.handler = async (event, context) => {
       .from('vaccinations')
       .insert({
         user_id,
-        child_name,
+        patient_name,
         vaccine,
         preferred_date: preferred_date || null,
         health_center: health_center || null,

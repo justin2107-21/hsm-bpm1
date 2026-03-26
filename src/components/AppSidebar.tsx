@@ -15,7 +15,6 @@ import {
   CreditCard,
   FileText,
   MessageSquare,
-  ScanLine,
   UserSearch,
   UserPlus,
   Map,
@@ -23,6 +22,7 @@ import {
   CalendarDays,
   Users,
   PlugZap,
+  ScanLine,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth, type UserRole } from "@/contexts/AuthContext";
@@ -75,10 +75,10 @@ const bhwSections: NavSection[] = [
     items: [{ title: "BHW Dashboard", url: "/", icon: LayoutDashboard }],
   },
   {
-    label: "Citizen Service Assistance",
+    label: "Citizen Services",
     items: [
-      { title: "Citizen Service Assistance", url: "/citizen-service-assistance", icon: ScanLine },
       { title: "Citizen Search", url: "/staff/search-citizens", icon: UserSearch },
+      { title: "Assisted Request", url: "/assisted-requests", icon: FileText },
     ],
   },
   {
@@ -93,12 +93,6 @@ const bhwSections: NavSection[] = [
     items: [
       { title: "Disease Case Reporting", url: "/bhw/community-reports", icon: ShieldAlert },
       { title: "Sanitation Complaints", url: "/bhw/complaints", icon: MessageSquare },
-    ],
-  },
-  {
-    label: "Service Requests",
-    items: [
-      { title: "ASSISTED REQUEST & TRACKING", url: "/assisted-requests", icon: FileText },
     ],
   },
   {
@@ -228,32 +222,31 @@ export function AppSidebar() {
       {
         label: "Inspection Management",
         items: [
-          { title: "Assigned Inspections", url: "/sanitation-permit", icon: ClipboardCheck },
-          { title: "Inspection Calendar", url: "/sanitation-permit", icon: CalendarDays },
+          { title: "Assigned Inspections", url: "/inspector/assigned-inspections", icon: ClipboardCheck },
+          { title: "Inspection Schedule", url: "/inspector/inspection-schedule", icon: CalendarDays },
         ],
       },
       {
-        label: "Establishment Inspections",
+        label: "Establishments",
         items: [
-          { title: "Establishment List", url: "/citizen/establishments", icon: Building2 },
-          { title: "Inspection Reports", url: "/citizen/inspections", icon: Search },
+          { title: "Establishment List", url: "/inspector/establishments", icon: Building2 },
+          { title: "Inspection Reports", url: "/inspector/inspection-reports", icon: Search },
         ],
       },
       {
-        label: "Sanitation Complaints",
+        label: "Complaints Management",
         items: [
-          { title: "Complaint Inspections", url: "/wastewater", icon: MessageSquare },
-          { title: "Complaint Reports", url: "/wastewater", icon: FileText },
+          { title: "Complaint Inspections", url: "/inspector/complaint-inspections", icon: MessageSquare },
         ],
       },
       {
-        label: "Correction Notices",
+        label: "Compliance & Notices",
         items: [
-          { title: "Issued Notices", url: "/sanitation-permit", icon: Award },
-          { title: "Compliance Monitoring", url: "/sanitation-permit", icon: Search },
+          { title: "Correction Notices", url: "/inspector/correction-notices", icon: Award },
+          { title: "Compliance Monitoring", url: "/inspector/compliance-monitoring", icon: Search },
         ],
       },
-      { label: "History", items: [{ title: "Inspection History", url: "/citizen/inspections", icon: Search }] },
+      { label: "History", items: [{ title: "Inspection History", url: "/inspector/inspection-history", icon: FileText }] },
     ];
   } else if (currentRole === "Captain_User") {
     sections = [
@@ -292,11 +285,21 @@ export function AppSidebar() {
         label: "Municipal Overview",
         items: [
           { title: "Real-Time Service Requests", url: "/lgu/requests", icon: FileText },
+          { title: "Citizen Search", url: "/staff/search-citizens", icon: UserSearch },
+        ],
+      },
+      {
+        label: "Health Monitoring",
+        items: [
           { title: "Disease Mapping Dashboard", url: "/surveillance/map", icon: Map },
           { title: "Vaccination Coverage", url: "/lgu/vaccination", icon: Syringe },
-          { title: "Active Inspections", url: "/lgu/sanitation", icon: ClipboardCheck },
-          { title: "Establishment Compliance", url: "/lgu/sanitation", icon: Building2 },
-          { title: "Citizen Search", url: "/staff/search-citizens", icon: UserSearch },
+        ],
+      },
+      {
+        label: "Sanitation Monitoring",
+        items: [
+          { title: "Active Inspections", url: "/lgu/inspections", icon: ClipboardCheck },
+          { title: "Establishment Compliance", url: "/lgu/compliance", icon: Building2 },
         ],
       },
       { label: "Reports & Analytics", items: [{ title: "Municipal Analytics", url: "/lgu/analytics", icon: BarChart3 }] },

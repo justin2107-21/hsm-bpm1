@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -22,6 +23,8 @@ const BhwCommunityReports = () => {
   const [barangay, setBarangay] = useState(BARANGAYS[0]);
   const [details, setDetails] = useState("");
   const [citizenId, setCitizenId] = useState("");
+  const [selectedCase, setSelectedCase] = useState<any>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const { data: cases = [] } = useQuery({
     queryKey: ["bhw_disease_cases"],
@@ -117,7 +120,7 @@ const BhwCommunityReports = () => {
               </TableHeader>
               <TableBody>
                 {cases.map((c) => (
-                  <TableRow key={c.id}>
+                  <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50" onClick={() => { setSelectedCase(c); setDetailOpen(true); }}>
                     <TableCell className="text-sm">{c.case_date}</TableCell>
                     <TableCell className="text-sm">{c.disease}</TableCell>
                     <TableCell className="text-sm">{c.patient_location || "—"}</TableCell>
@@ -129,6 +132,44 @@ const BhwCommunityReports = () => {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-heading">Disease Case Details</DialogTitle>
+          </DialogHeader>
+          {selectedCase && (
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Disease</p>
+                <p className="font-medium">{selectedCase.disease}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Location</p>
+                <p className="font-medium">{selectedCase.patient_location || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Date Reported</p>
+                <p className="font-medium">{selectedCase.case_date}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Symptoms/Details</p>
+                <p className="font-medium text-sm">{selectedCase.details || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Status</p>
+                <p className="font-medium">{selectedCase.status}</p>
+              </div>
+              {selectedCase.reporter && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Reported by</p>
+                  <p className="font-medium">{selectedCase.reporter}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

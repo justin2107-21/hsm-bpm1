@@ -57,7 +57,7 @@ const ServiceRequests = () => {
           created_at: vac.created_at,
           request_type: "Vaccination Appointment",
           title: `Vaccination — ${vac.vaccine}`,
-          description: `Child: ${vac.child_name || 'N/A'}; Health Center: ${vac.health_center_preferred || 'Any'}${vac.notes ? `; Notes: ${vac.notes}` : ''}`,
+          description: `Patient: ${vac.patient_name || 'N/A'}; Health Center: ${vac.health_center || 'Any'}${vac.notes ? `; Notes: ${vac.notes}` : ''}`,
           status: vac.status,
           type: 'vaccination',
           original: vac,
@@ -196,10 +196,10 @@ const ServiceRequests = () => {
                       <p className="text-xs text-muted-foreground mb-1">Vaccine</p>
                       <p className="text-sm font-medium">{selectedRequest.original.vaccine}</p>
                     </div>
-                    {selectedRequest.original.child_name && (
+                    {selectedRequest.original.patient_name && (
                       <div>
-                        <p className="text-xs text-muted-foreground mb-1">Child Name</p>
-                        <p className="text-sm font-medium">{selectedRequest.original.child_name}</p>
+                        <p className="text-xs text-muted-foreground mb-1">Patient Name</p>
+                        <p className="text-sm font-medium">{selectedRequest.original.patient_name}</p>
                       </div>
                     )}
                     {selectedRequest.original.vaccination_date && (

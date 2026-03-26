@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -22,6 +23,8 @@ const BhwComplaints = () => {
   const [barangay, setBarangay] = useState(BARANGAYS[0]);
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
+  const [selectedComplaint, setSelectedComplaint] = useState<any>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const { data: complaints = [] } = useQuery({
     queryKey: ["bhw_complaints"],
@@ -117,7 +120,7 @@ const BhwComplaints = () => {
               </TableHeader>
               <TableBody>
                 {complaints.map((c) => (
-                  <TableRow key={c.id}>
+                  <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50" onClick={() => { setSelectedComplaint(c); setDetailOpen(true); }}>
                     <TableCell className="text-sm">{c.complaint_date}</TableCell>
                     <TableCell className="text-sm">{c.complaint_type}</TableCell>
                     <TableCell className="text-sm">{c.location || "—"}</TableCell>
@@ -129,6 +132,42 @@ const BhwComplaints = () => {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-heading">Complaint Details</DialogTitle>
+          </DialogHeader>
+          {selectedComplaint && (
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Reported by</p>
+                <p className="font-medium">{selectedComplaint.complainant || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Complaint Type</p>
+                <p className="font-medium">{selectedComplaint.complaint_type}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Location</p>
+                <p className="font-medium">{selectedComplaint.location || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Description</p>
+                <p className="font-medium text-sm">{selectedComplaint.description || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Date</p>
+                <p className="font-medium">{selectedComplaint.complaint_date}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Status</p>
+                <p className="font-medium">{selectedComplaint.status}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -46,7 +46,7 @@ const VaccinationNutrition = () => {
   const [selectedVaccination, setSelectedVaccination] = useState<any>(null);
   const [form, setForm] = useState({
     vaccine_type: "",
-    child_name: "",
+    patient_name: "",
     preferred_date: "",
     preferred_center: "",
     notes: "",
@@ -90,7 +90,7 @@ const VaccinationNutrition = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             user_id: user!.id,
-            child_name: form.child_name,
+            patient_name: form.patient_name,
             vaccine: form.vaccine_type,
             preferred_date: form.preferred_date,
             health_center: form.preferred_center,
@@ -112,7 +112,7 @@ const VaccinationNutrition = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["citizen_vaccinations", user?.id] });
       setOpen(false);
-      setForm({ vaccine_type: "", child_name: "", preferred_date: "", preferred_center: "", notes: "" });
+      setForm({ vaccine_type: "", patient_name: "", preferred_date: "", preferred_center: "", notes: "" });
       toast.success("Vaccination appointment request submitted");
     },
     onError: (e: Error) => toast.error(e.message || "Failed to submit vaccination request"),
@@ -140,11 +140,11 @@ const VaccinationNutrition = () => {
             </DialogHeader>
             <div className="grid gap-3">
               <div>
-                <Label className="text-xs">Child Name *</Label>
+                <Label className="text-xs">Patient Name *</Label>
                 <Input
-                  value={form.child_name}
-                  onChange={(e) => setForm({ ...form, child_name: e.target.value })}
-                  placeholder="Enter child's name"
+                  value={form.patient_name}
+                  onChange={(e) => setForm({ ...form, patient_name: e.target.value })}
+                  placeholder="Enter patient's name"
                 />
               </div>
               <div>
@@ -205,7 +205,7 @@ const VaccinationNutrition = () => {
               <Button
                 className="w-full"
                 onClick={() => requestMutation.mutate()}
-                disabled={requestMutation.isPending || !form.vaccine_type || !form.child_name}
+                disabled={requestMutation.isPending || !form.vaccine_type || !form.patient_name}
               >
                 {requestMutation.isPending ? "Submitting..." : "Submit Vaccination Request"}
               </Button>
@@ -325,7 +325,7 @@ const VaccinationNutrition = () => {
                     <TableCell className="text-xs font-mono text-muted-foreground">{v.id}</TableCell>
                     <TableCell className="text-sm">{v.vaccination_date}</TableCell>
                     <TableCell className="text-sm">{v.vaccine}</TableCell>
-                    <TableCell className="text-sm">{v.child_name}</TableCell>
+                    <TableCell className="text-sm">{v.patient_name}</TableCell>
                     <TableCell className="text-sm hidden md:table-cell">{v.bhw_name}</TableCell>
                     <TableCell><StatusBadge status={v.status} /></TableCell>
                   </TableRow>
@@ -360,7 +360,7 @@ const VaccinationNutrition = () => {
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase">Child Name</p>
-                  <p className="text-sm">{selectedVaccination.child_name}</p>
+                  <p className="text-sm">{selectedVaccination.patient_name}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">

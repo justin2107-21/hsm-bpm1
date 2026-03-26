@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -18,6 +19,8 @@ const BhwVaccinationRequests = () => {
   const [citizenId, setCitizenId] = useState("");
   const [vaccine, setVaccine] = useState("BCG");
   const [notes, setNotes] = useState("");
+  const [selectedVaccination, setSelectedVaccination] = useState<any>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const { data: vaccinations = [] } = useQuery({
     queryKey: ["bhw_vaccinations"],
@@ -124,16 +127,16 @@ const BhwVaccinationRequests = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-xs">Date</TableHead>
-                  <TableHead className="text-xs">Child</TableHead>
+                  <TableHead className="text-xs">Patient Name</TableHead>
                   <TableHead className="text-xs">Vaccine</TableHead>
                   <TableHead className="text-xs">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {vaccinations.map((v: any) => (
-                  <TableRow key={v.id}>
+                  <TableRow key={v.id} className="cursor-pointer hover:bg-muted/50" onClick={() => { setSelectedVaccination(v); setDetailOpen(true); }}>
                     <TableCell className="text-sm">{v.vaccination_date}</TableCell>
-                    <TableCell className="text-sm">{v.child_name}</TableCell>
+                    <TableCell className="text-sm">{v.patient_name}</TableCell>
                     <TableCell className="text-sm">{v.vaccine}</TableCell>
                     <TableCell>
                       <StatusBadge status={v.status} />
@@ -145,6 +148,46 @@ const BhwVaccinationRequests = () => {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-heading">Vaccination Details</DialogTitle>
+          </DialogHeader>
+          {selectedVaccination && (
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Patient Name</p>
+                <p className="font-medium">{selectedVaccination.patient_name}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Vaccine</p>
+                <p className="font-medium">{selectedVaccination.vaccine}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Date</p>
+                <p className="font-medium">{selectedVaccination.vaccination_date}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Status</p>
+                <p className="font-medium">{selectedVaccination.status}</p>
+              </div>
+              {selectedVaccination.bhw_name && (
+                <div>
+                  <p className="text-xs text-muted-foreground">BHW Assigned</p>
+                  <p className="font-medium">{selectedVaccination.bhw_name}</p>
+                </div>
+              )}
+              {selectedVaccination.age && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Age</p>
+                  <p className="font-medium">{selectedVaccination.age}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

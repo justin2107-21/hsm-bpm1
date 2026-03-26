@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import StatusBadge from "@/components/StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +11,10 @@ import { Search } from "lucide-react";
 
 const LguRequests = () => {
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<any>(null);
 
   const { data: requests = [] } = useQuery({
     queryKey: ["lgu_requests_table"],
@@ -19,20 +25,38 @@ const LguRequests = () => {
         .order("created_at", { ascending: false })
         .limit(500);
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
+  const requestTypes = useMemo(() => {
+    const types = [...new Set(requests.map((r: any) => r.request_type).filter(Boolean))];
+    return types.sort();
+  }, [requests]);
+
   const filtered = useMemo(() => {
+    let result = requests;
+
     const q = search.trim().toLowerCase();
-    if (!q) return requests;
-    return requests.filter(
-      (r) =>
-        r.request_type.toLowerCase().includes(q) ||
-        r.title.toLowerCase().includes(q) ||
-        (r.description || "").toLowerCase().includes(q),
-    );
-  }, [requests, search]);
+    if (q) {
+      result = result.filter(
+        (r: any) =>
+          r.request_type.toLowerCase().includes(q) ||
+          r.title.toLowerCase().includes(q) ||
+          (r.description || "").toLowerCase().includes(q)
+      );
+    }
+
+    if (statusFilter !== "all") {
+      result = result.filter((r: any) => r.status === statusFilter);
+    }
+
+    if (typeFilter !== "all") {
+      result = result.filter((r: any) => r.request_type === typeFilter);
+    }
+
+    return result;
+  }, [requests, search, statusFilter, typeFilter]);
 
   return (
     <div className="space-y-6">
@@ -43,49 +67,161 @@ const LguRequests = () => {
 
       <Card className="glass-card">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-heading flex items-center gap-2">
-            <Search className="h-4 w-4 text-primary" /> Requests
-          </CardTitle>
+          <CardTitle className="text-sm font-heading">Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-2 mb-3">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search type, title, description..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-8 max-w-md"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8 h-8"
+              />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-8 px-2 rounded-md border border-input bg-background text-sm"
+            >
+              <option value="all">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="h-8 px-2 rounded-md border border-input bg-background text-sm"
+            >
+              <option value="all">All Types</option>
+              {requestTypes.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
           </div>
+        </CardContent>
+      </Card>
 
+      <Card className="glass-card">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-heading">Service Requests ({filtered.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
           {filtered.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">No requests found.</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-xs">Date</TableHead>
-                  <TableHead className="text-xs">Type</TableHead>
-                  <TableHead className="text-xs">Title</TableHead>
-                  <TableHead className="text-xs hidden md:table-cell">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="text-sm">{new Date(r.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-sm">{r.request_type}</TableCell>
-                    <TableCell className="text-sm">{r.title}</TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <StatusBadge status={r.status} />
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs">Date</TableHead>
+                    <TableHead className="text-xs">Type</TableHead>
+                    <TableHead className="text-xs">Title</TableHead>
+                    <TableHead className="text-xs hidden md:table-cell">Status</TableHead>
+                    <TableHead className="text-xs">Action</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((r: any) => (
+                    <TableRow
+                      key={r.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => {
+                        setSelectedRequest(r);
+                        setDetailOpen(true);
+                      }}
+                    >
+                      <TableCell className="text-sm">
+                        {new Date(r.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-sm">{r.request_type}</TableCell>
+                      <TableCell className="text-sm font-medium">{r.title}</TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <StatusBadge status={r.status} />
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedRequest(r);
+                            setDetailOpen(true);
+                          }}
+                        >
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Request Detail Modal */}
+      {selectedRequest && (
+        <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{selectedRequest.title}</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="bg-muted/30 p-4 rounded-lg space-y-3">
+                <h3 className="font-semibold text-sm">Request Details</h3>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Type:</span>
+                    <div className="font-medium">{selectedRequest.request_type}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Status:</span>
+                    <div className="mt-1">
+                      <StatusBadge status={selectedRequest.status} />
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Created:</span>
+                    <div className="font-medium">
+                      {new Date(selectedRequest.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  {selectedRequest.scheduled_date && (
+                    <div>
+                      <span className="text-muted-foreground">Scheduled Date:</span>
+                      <div className="font-medium">{selectedRequest.scheduled_date}</div>
+                    </div>
+                  )}
+                  {selectedRequest.scheduled_time && (
+                    <div>
+                      <span className="text-muted-foreground">Scheduled Time:</span>
+                      <div className="font-medium">{selectedRequest.scheduled_time}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {selectedRequest.description && (
+                <div className="bg-muted/30 p-4 rounded-lg">
+                  <h3 className="font-semibold text-sm mb-2">Description</h3>
+                  <p className="text-sm whitespace-pre-wrap">{selectedRequest.description}</p>
+                </div>
+              )}
+
+              <Button variant="outline" className="w-full" onClick={() => setDetailOpen(false)}>
+                Close
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

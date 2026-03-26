@@ -37,12 +37,25 @@ import LguRequests from "@/pages/lgu/LguRequests";
 import LguVaccination from "@/pages/lgu/LguVaccination";
 import LguSanitation from "@/pages/lgu/LguSanitation";
 import LguAnalytics from "@/pages/lgu/LguAnalytics";
+import LguInspections from "@/pages/lgu/LguInspections";
+import LguCompliance from "@/pages/lgu/LguCompliance";
 import SystemAdminUsers from "@/pages/sys/SystemAdminUsers";
 import SystemAdminPlaceholder from "@/pages/sys/SystemAdminPlaceholder";
 import SettingsPage from "@/pages/SettingsPage";
-import LoginPage from "@/pages/LoginPage";
+import { CitizenLoginPage } from "@/pages/CitizenLoginPage";
+import { StaffLoginPage } from "@/pages/StaffLoginPage";
 import NotFound from "@/pages/NotFound";
 import ReportsComplaints from "@/pages/ReportsComplaints";
+
+// Inspector pages
+import AssignedInspections from "@/pages/inspector/AssignedInspections";
+import InspectionSchedule from "@/pages/inspector/InspectionSchedule";
+import EstablishmentList from "@/pages/inspector/EstablishmentList";
+import InspectionReports from "@/pages/inspector/InspectionReports";
+import ComplaintInspections from "@/pages/inspector/ComplaintInspections";
+import CorrectionNotices from "@/pages/inspector/CorrectionNotices";
+import ComplianceMonitoring from "@/pages/inspector/ComplianceMonitoring";
+import InspectionHistory from "@/pages/inspector/InspectionHistory";
 
 // Citizen pages
 import CitizenQR from "@/pages/citizen/CitizenQR";
@@ -106,7 +119,11 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
           <Routes>
-            <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+            {/* Public login routes */}
+            <Route path="/login" element={<PublicRoute><CitizenLoginPage /></PublicRoute>} />
+            <Route path="/staffadmin" element={<PublicRoute><StaffLoginPage /></PublicRoute>} />
+            
+            {/* Protected routes */}
             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route path="/" element={<RoleDashboard />} />
               {/* Core module routes */}
@@ -143,6 +160,8 @@ const App = () => (
               <Route path="/lgu/requests" element={<LguRequests />} />
               <Route path="/lgu/vaccination" element={<LguVaccination />} />
               <Route path="/lgu/sanitation" element={<LguSanitation />} />
+              <Route path="/lgu/inspections" element={<LguInspections />} />
+              <Route path="/lgu/compliance" element={<LguCompliance />} />
               <Route path="/lgu/analytics" element={<LguAnalytics />} />
               {/* System Admin routes */}
               <Route path="/sys/users" element={<SystemAdminUsers />} />
@@ -151,6 +170,47 @@ const App = () => (
               <Route path="/sys/database" element={<SystemAdminPlaceholder title="Database Management" />} />
               <Route path="/sys/integrations" element={<SystemAdminPlaceholder title="Integration Monitoring" />} />
               <Route path="/sys/requests" element={<SystemAdminPlaceholder title="Requests & Module Performance" />} />
+              {/* Inspector routes */}
+              <Route path="/inspector/assigned-inspections" element={
+                <ProtectedRoleRoute allowedRoles={["BSI_User"]}>
+                  <AssignedInspections />
+                </ProtectedRoleRoute>
+              } />
+              <Route path="/inspector/inspection-schedule" element={
+                <ProtectedRoleRoute allowedRoles={["BSI_User"]}>
+                  <InspectionSchedule />
+                </ProtectedRoleRoute>
+              } />
+              <Route path="/inspector/establishments" element={
+                <ProtectedRoleRoute allowedRoles={["BSI_User"]}>
+                  <EstablishmentList />
+                </ProtectedRoleRoute>
+              } />
+              <Route path="/inspector/inspection-reports" element={
+                <ProtectedRoleRoute allowedRoles={["BSI_User"]}>
+                  <InspectionReports />
+                </ProtectedRoleRoute>
+              } />
+              <Route path="/inspector/complaint-inspections" element={
+                <ProtectedRoleRoute allowedRoles={["BSI_User"]}>
+                  <ComplaintInspections />
+                </ProtectedRoleRoute>
+              } />
+              <Route path="/inspector/correction-notices" element={
+                <ProtectedRoleRoute allowedRoles={["BSI_User"]}>
+                  <CorrectionNotices />
+                </ProtectedRoleRoute>
+              } />
+              <Route path="/inspector/compliance-monitoring" element={
+                <ProtectedRoleRoute allowedRoles={["BSI_User"]}>
+                  <ComplianceMonitoring />
+                </ProtectedRoleRoute>
+              } />
+              <Route path="/inspector/inspection-history" element={
+                <ProtectedRoleRoute allowedRoles={["BSI_User"]}>
+                  <InspectionHistory />
+                </ProtectedRoleRoute>
+              } />
               {/* Citizen routes */}
               <Route path="/citizen/qr" element={<CitizenQR />} />
               <Route path="/citizen/health" element={<HealthServicesHub />} />

@@ -1,8 +1,10 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import StatCard from "@/components/StatCard";
 import HealthIndexMeter from "@/components/HealthIndexMeter";
 import StatusBadge from "@/components/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Stethoscope, Syringe, AlertTriangle, ClipboardCheck,
 } from "lucide-react";
@@ -33,6 +35,7 @@ const vaccinationPie = [
 
 const Dashboard = () => {
   const { currentRole } = useAuth();
+  const navigate = useNavigate();
   const isCaptain = currentRole === "Captain_User";
 
   const { data: consultations = [] } = useQuery({
@@ -89,10 +92,18 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Consultations" value={String(consultations.length)} icon={Stethoscope} />
-        <StatCard title="Active Cases" value={String(totalActiveCases)} icon={AlertTriangle} description="Under surveillance" />
-        <StatCard title="Vaccinations" value={String(vaccinations.length)} icon={Syringe} />
-        <StatCard title="Sanitation Permits" value={String(permits.length)} icon={ClipboardCheck} description={`${pendingPermits} pending review`} />
+        <div className="cursor-pointer" onClick={() => navigate("/lgu/sanitation")}>
+          <StatCard title="Sanitation Permit Approvals" value={String(permits.length)} icon={ClipboardCheck} description={`${pendingPermits} pending`} />
+        </div>
+        <div className="cursor-pointer" onClick={() => navigate("/health-surveillance")}>
+          <StatCard title="Disease Surveillance" value={String(totalActiveCases)} icon={AlertTriangle} description="Under monitoring" />
+        </div>
+        <div className="cursor-pointer" onClick={() => navigate("/immunization")}>
+          <StatCard title="Vaccination Coverage" value={String(vaccinations.length)} icon={Syringe} description="Records tracked" />
+        </div>
+        <div className="cursor-pointer" onClick={() => navigate("/lgu/sanitation")}>
+          <StatCard title="Establishment Compliance" value={String(permits.length)} icon={ClipboardCheck} description="Monitoring status" />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -115,7 +126,7 @@ const Dashboard = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                 <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
+                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px", color: "hsl(var(--foreground))" }} />
                 <Bar dataKey="cases" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -131,7 +142,7 @@ const Dashboard = () => {
                   <Pie data={vaccinationPie} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" paddingAngle={3}>
                     {vaccinationPie.map((entry, i) => (<Cell key={i} fill={entry.color} />))}
                   </Pie>
-                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
+                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px", color: "hsl(var(--foreground))" }} />
                 </PieChart>
               </ResponsiveContainer>
             </CardContent>
@@ -148,7 +159,7 @@ const Dashboard = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                 <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
+                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px", color: "hsl(var(--foreground))" }} />
                 <Line type="monotone" dataKey="dengue" stroke="hsl(var(--chart-red))" strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="tb" stroke="hsl(var(--chart-orange))" strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="flu" stroke="hsl(var(--chart-blue))" strokeWidth={2} dot={false} />
