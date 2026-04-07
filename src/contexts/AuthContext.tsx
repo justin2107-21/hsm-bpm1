@@ -35,6 +35,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInAsCitizen: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  refreshEstablishments: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -205,8 +206,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('cie_citizen_session');
   };
 
+  const refreshEstablishments = async () => {
+    if (user?.id) {
+      await fetchEstablishments(user.id);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, currentRole, userName, loading, roleLoading, hasEstablishments, citizenData, signIn, signInAsCitizen, signOut }}>
+    <AuthContext.Provider value={{ user, session, currentRole, userName, loading, roleLoading, hasEstablishments, citizenData, signIn, signInAsCitizen, signOut, refreshEstablishments }}>
       {children}
     </AuthContext.Provider>
   );

@@ -2,167 +2,287 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import {
-  QrCode,
-  UserPlus,
   Syringe,
   ShieldAlert,
   ClipboardList,
   FileText,
+  Activity,
+  TrendingUp,
+  AlertCircle,
+  MessageSquare,
+  ChevronRight,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 const BhwDashboard = () => {
-  const { userName } = useAuth();
+  const { user, userName } = useAuth();
   const navigate = useNavigate();
+  const [activeActivityTab, setActiveActivityTab] = useState<"all" | "vaccinations" | "disease" | "complaints">("all");
+
+  const { data: vaccinationRequests = [] } = useQuery({
+    queryKey: ["bhw_vaccination_requests"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("vaccinations")
+        .select("id, vaccine, vaccination_date, status")
+        .order("vaccination_date", { ascending: false })
+        .limit(5);
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
+  const { data: diseaseReports = [] } = useQuery({
+    queryKey: ["bhw_disease_reports"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("surveillance_cases")
+        .select("id, disease, case_date, status")
+        .order("case_date", { ascending: false })
+        .limit(5);
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
+  const { data: complaints = [] } = useQuery({
+    queryKey: ["bhw_sanitation_complaints"],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("sanitation_complaints")
+        .select("complaint_id as id, complaint_type, status, created_at")
+        .order("created_at", { ascending: false })
+        .limit(5);
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
+  const { data: serviceRequests = [] } = useQuery({
+    queryKey: ["bhw_service_requests"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("service_requests")
+        .select("id, status, created_at, title")
+        .order("created_at", { ascending: false })
+        .limit(5);
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
+  const pendingVaccinations = vaccinationRequests.filter(
+    (v: any) => v.status === "scheduled" || v.status === "pending"
+  ).length;
+  const activeDiseaseCases = diseaseReports.filter(
+    (d: any) => d.status === "active" || d.status === "pending"
+  ).length;
+  const pendingComplaints = complaints.filter(
+    (c: any) => c.status === "pending" || c.status === "Pending"
+  ).length;
+
+  // Get recent activity from all sources
+  const recentActivity = [
+    ...vaccinationRequests.map((item: any) => ({ ...item, type: "vaccination", date: item.vaccination_date })),
+    ...diseaseReports.map((item: any) => ({ ...item, type: "disease", date: item.case_date })),
+    ...complaints.map((item: any) => ({ ...item, type: "complaint", date: item.created_at })),
+  ]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5);
+
+  // Filter activity based on selected tab
+  const getFilteredActivity = () => {
+    switch (activeActivityTab) {
+      case "vaccinations":
+        return vaccinationRequests.map((item: any) => ({ ...item, type: "vaccination", date: item.vaccination_date }));
+      case "disease":
+        return diseaseReports.map((item: any) => ({ ...item, type: "disease", date: item.case_date }));
+      case "complaints":
+        return complaints.map((item: any) => ({ ...item, type: "complaint", date: item.created_at }));
+      default:
+        return recentActivity;
+    }
+  };
+
+  const filteredActivity = getFilteredActivity();
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold font-heading">Barangay Health Worker Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          {userName ? `Field operations for ${userName}` : "Assist citizens, log cases, and monitor barangay health."}
+    <div className="space-y-6 pb-8">
+      {/* Welcome Banner */}
+      <div className="bg-emerald-700 dark:bg-emerald-750 rounded-xl p-8 text-white shadow-lg">
+        <p className="text-sm font-medium opacity-90">Health Worker Portal</p>
+        <h1 className="text-3xl font-bold mt-1 mb-2">Welcome back, {userName?.split(" ")[0] || "Health Worker"}!</h1>
+        <p className="text-sm opacity-90 mb-4">
+          You have {pendingVaccinations + activeDiseaseCases + pendingComplaints} active cases requiring attention.
         </p>
+        <Button
+          onClick={() => setActiveActivityTab("all")}
+          className="bg-white text-emerald-600 hover:bg-emerald-50 font-medium"
+        >
+          View All Activities
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card
-          className="glass-card cursor-pointer hover:border-primary/40 transition-colors"
-          onClick={() => navigate("/bhw/citizen-assistance")}
-        >
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-heading flex items-center gap-2">
-              <QrCode className="h-4 w-4 text-primary" /> Citizen Assistance
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-xs text-muted-foreground">
-              Scan QR Citizen ID, search citizens, and assist with registration.
-            </p>
-            <div className="flex flex-col gap-1.5">
-              <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => navigate("/bhw/citizen-assistance")}>
-                Scan QR Citizen ID
-              </Button>
-              <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => navigate("/bhw/citizen-assistance")}>
-                Register Citizen
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Recent Activity */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold">Recent Activity</h2>
+        </div>
 
-        <Card
-          className="glass-card cursor-pointer hover:border-primary/40 transition-colors"
-          onClick={() => navigate("/bhw/health-programs")}
-        >
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-heading flex items-center gap-2">
-              <Syringe className="h-4 w-4 text-primary" /> Vaccination Programs
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-xs text-muted-foreground">
-              View vaccination schedules and assist citizens with vaccination requests.
-            </p>
-            <div className="flex flex-col gap-1.5">
-              <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => navigate("/bhw/health-programs")}>
-                Assist Vaccination Request
-              </Button>
-              <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => navigate("/bhw/health-programs")}>
-                View Vaccination Schedule
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Tabs */}
+        <div className="flex gap-2 border-b">
+          {[
+            { id: "all", label: "All" },
+            { id: "vaccinations", label: "Vaccinations" },
+            { id: "disease", label: "Disease Cases" },
+            { id: "complaints", label: "Complaints" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveActivityTab(tab.id as any)}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                activeActivityTab === tab.id
+                  ? "border-emerald-500 text-emerald-600"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-        <Card
-          className="glass-card cursor-pointer hover:border-primary/40 transition-colors"
-          onClick={() => navigate("/bhw/community-reports")}
-        >
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-heading flex items-center gap-2">
-              <ShieldAlert className="h-4 w-4 text-primary" /> Disease Monitoring
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-xs text-muted-foreground">
-              Log suspected disease cases and review barangay disease reports.
-            </p>
-            <div className="flex flex-col gap-1.5">
-              <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => navigate("/bhw/community-reports")}>
-                Report Disease Case
-              </Button>
-              <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => navigate("/bhw/community-reports")}>
-                View Disease Reports
-              </Button>
+        {/* Activity List */}
+        <Card className="border-0 shadow-sm p-0 divide-y">
+          {filteredActivity.length > 0 ? (
+            <div>
+              {filteredActivity.map((activity, index) => (
+                <div key={index} className="p-4 hover:bg-gray-50 transition-colors cursor-pointer group">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="flex-shrink-0">
+                        {activity.type === "vaccination" ? (
+                          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100">
+                            <Syringe className="h-5 w-5 text-blue-600 dark:text-white" />
+                          </div>
+                        ) : activity.type === "disease" ? (
+                          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-red-100">
+                            <ShieldAlert className="h-5 w-5 text-red-600 dark:text-white" />
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-orange-100">
+                            <MessageSquare className="h-5 w-5 text-orange-600 dark:text-white" />
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {activity.type === "vaccination"
+                            ? `Vaccine: ${activity.vaccine}`
+                            : activity.type === "disease"
+                            ? `Disease: ${activity.disease}`
+                            : `Complaint: ${activity.complaint_type}`}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(activity.date).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge
+                      className={`group-hover:bg-opacity-80 transition-all ${
+                        activity.status === "pending" || activity.status === "Pending"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : activity.status === "active"
+                          ? "bg-orange-100 text-orange-800"
+                          : activity.status === "scheduled"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                      variant="outline"
+                    >
+                      {activity.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
             </div>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="glass-card cursor-pointer hover:border-primary/40 transition-colors"
-          onClick={() => navigate("/bhw/complaints")}
-        >
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-heading flex items-center gap-2">
-              <ClipboardList className="h-4 w-4 text-primary" /> Sanitation Complaints
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-xs text-muted-foreground">
-              Submit sanitation complaints reported by residents and monitor status.
-            </p>
-            <div className="flex flex-col gap-1.5">
-              <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => navigate("/bhw/complaints")}>
-                Report Sanitation Complaint
-              </Button>
-              <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => navigate("/bhw/complaints")}>
-                View Complaints
-              </Button>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              <Activity className="h-12 w-12 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">No {activeActivityTab === "all" ? "" : activeActivityTab} activity yet</p>
             </div>
-          </CardContent>
+          )}
         </Card>
+      </div>
 
-        <Card
-          className="glass-card cursor-pointer hover:border-primary/40 transition-colors"
-          onClick={() => navigate("/bhw/requests")}
-        >
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-heading flex items-center gap-2">
-              <UserPlus className="h-4 w-4 text-primary" /> Assisted Requests
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-xs text-muted-foreground">
-              Submit and track health and sanitation requests on behalf of citizens.
-            </p>
-            <div className="flex flex-col gap-1.5">
-              <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => navigate("/bhw/requests")}>
-                Submit Request for Citizen
-              </Button>
-              <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => navigate("/bhw/requests")}>
-                Track Requests
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="glass-card cursor-pointer hover:border-primary/40 transition-colors"
-          onClick={() => navigate("/bhw/barangay-health")}
-        >
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-heading flex items-center gap-2">
-              <FileText className="h-4 w-4 text-primary" /> Barangay Health Data
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-xs text-muted-foreground">
-              View disease trends, vaccination coverage, and program participation in your barangay.
-            </p>
-            <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => navigate("/bhw/barangay-health")}>
-              Open Barangay Health Data
-            </Button>
-          </CardContent>
-        </Card>
+      {/* Quick Action Buttons */}
+      <div className="space-y-3">
+        <h3 className="text-lg font-bold">Quick Actions</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <Button
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={() => navigate("/bhw/health-programs")}
+          >
+            <Syringe className="h-4 w-4" />
+            <span className="hidden sm:inline">Vaccination Programs</span>
+            <span className="sm:hidden">Vaccinations</span>
+          </Button>
+          <Button
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={() => navigate("/bhw/community-reports")}
+          >
+            <ShieldAlert className="h-4 w-4" />
+            <span className="hidden sm:inline">Disease Monitoring</span>
+            <span className="sm:hidden">Disease</span>
+          </Button>
+          <Button
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={() => navigate("/bhw/complaints")}
+          >
+            <ClipboardList className="h-4 w-4" />
+            <span className="hidden sm:inline">Sanitation Issues</span>
+            <span className="sm:hidden">Complaints</span>
+          </Button>
+          <Button
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={() => navigate("/bhw/requests")}
+          >
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Service Requests</span>
+            <span className="sm:hidden">Requests</span>
+          </Button>
+          <Button
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={() => navigate("/bhw/barangay-health")}
+          >
+            <TrendingUp className="h-4 w-4" />
+            <span className="hidden sm:inline">Barangay Health</span>
+            <span className="sm:hidden">Health Data</span>
+          </Button>
+          <Button
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={() => navigate("/bhw/nutrition-monitoring")}
+          >
+            <Activity className="h-4 w-4" />
+            <span className="hidden sm:inline">Nutrition Monitor</span>
+            <span className="sm:hidden">Nutrition</span>
+          </Button>
+        </div>
       </div>
     </div>
   );

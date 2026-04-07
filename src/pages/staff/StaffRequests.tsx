@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import StatusBadge from "@/components/StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -11,6 +12,9 @@ import { toast } from "sonner";
 
 const StaffRequests = () => {
   const [search, setSearch] = useState("");
+  // State for detail modal
+  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: requests = [] } = useQuery({
@@ -84,14 +88,14 @@ const StaffRequests = () => {
               </TableHeader>
               <TableBody>
                 {filtered.map((r) => (
-                  <TableRow key={r.id}>
+                  <TableRow key={r.id} className="cursor-pointer hover:bg-muted/50" onClick={() => { setSelectedRequest(r); setIsDetailOpen(true); }}>
                     <TableCell className="text-sm">{new Date(r.created_at).toLocaleDateString()}</TableCell>
                     <TableCell className="text-sm">{r.request_type}</TableCell>
                     <TableCell className="text-sm">{r.title}</TableCell>
                     <TableCell className="hidden md:table-cell">
                       <StatusBadge status={r.status} />
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-2">
                         <Button
                           size="sm"
@@ -121,6 +125,96 @@ const StaffRequests = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal for displaying full request details */}
+      {selectedRequest && (
+        <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="font-heading">Request Details</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              {/* Reference ID */}
+              <div>
+                <p className="text-xs text-muted-foreground">Reference ID</p>
+                <p className="font-medium">{selectedRequest.id}</p>
+              </div>
+
+              {/* Request Type */}
+              <div>
+                <p className="text-xs text-muted-foreground">Request Type</p>
+                <p className="font-medium">{selectedRequest.request_type}</p>
+              </div>
+
+              {/* Title */}
+              <div>
+                <p className="text-xs text-muted-foreground">Title</p>
+                <p className="font-medium">{selectedRequest.title}</p>
+              </div>
+
+              {/* Description */}
+              {selectedRequest.description && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Description</p>
+                  <p className="font-medium whitespace-pre-wrap text-sm">{selectedRequest.description}</p>
+                </div>
+              )}
+
+              {/* Status */}
+              <div>
+                <p className="text-xs text-muted-foreground">Status</p>
+                <StatusBadge status={selectedRequest.status} />
+              </div>
+
+              {/* Requester Name */}
+              {selectedRequest.user_id && (
+                <div>
+                  <p className="text-xs text-muted-foreground">User ID</p>
+                  <p className="font-medium">{selectedRequest.user_id}</p>
+                </div>
+              )}
+
+              {/* Date Submitted */}
+              {selectedRequest.created_at && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Date Submitted</p>
+                  <p className="font-medium">{new Date(selectedRequest.created_at).toLocaleString()}</p>
+                </div>
+              )}
+
+              {/* Updated Date */}
+              {selectedRequest.updated_at && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Last Updated</p>
+                  <p className="font-medium">{new Date(selectedRequest.updated_at).toLocaleString()}</p>
+                </div>
+              )}
+
+              {/* Additional fields from database */}
+              {Object.entries(selectedRequest)
+                .filter(
+                  ([key]) =>
+                    ![
+                      "id",
+                      "request_type",
+                      "title",
+                      "description",
+                      "status",
+                      "user_id",
+                      "created_at",
+                      "updated_at",
+                    ].includes(key),
+                )
+                .map(([key, value]) => (
+                  <div key={key}>
+                    <p className="text-xs text-muted-foreground">{key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}</p>
+                    <p className="font-medium">{value ? String(value) : "N/A"}</p>
+                  </div>
+                ))}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

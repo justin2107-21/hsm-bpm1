@@ -6,7 +6,7 @@ import StatusBadge from "@/components/StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
-import { Syringe, Calendar } from "lucide-react";
+import { Syringe, Calendar, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -31,11 +31,11 @@ const VACCINE_TYPES = [
 ];
 
 const HEALTH_CENTERS = [
-  "Barangay Health Center",
-  "District Health Center",
-  "City Hospital",
-  "Vaccination Clinic",
-  "Mobile Vaccination Unit",
+  "Quezon City General Hospital",
+  "Novaliches District Hospital",
+  "Rosario Maclang Bautista General Hospital",
+  "Batasan Hills Super Health Center",
+  "Project 6 Health Center"
 ];
 
 const VaccinationNutrition = () => {
@@ -53,18 +53,27 @@ const VaccinationNutrition = () => {
   });
   const queryClient = useQueryClient();
 
-  const { data: vaccinations = [] } = useQuery({
-    queryKey: ["citizen_vaccinations", user?.id],
+  const { data: vaccinations = [], isLoading: vaccLoading, error: vaccError } = useQuery({
+    queryKey: ["citizen_vaccinations"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("vaccinations")
-        .select("*")
-        .eq("user_id", user!.id)
-        .order("vaccination_date", { ascending: false });
-      if (error) throw error;
-      return data || [];
+      try {
+        const { data, error } = await (supabase as any)
+          .from("vaccinations")
+          .select("*")
+          .order("id", { ascending: false })
+          .limit(100);
+        
+        console.log("📋 Vaccinations query - Error:", error);
+        console.log("📋 Vaccinations query - Data:", data);
+        console.log("📋 Vaccinations table row count:", data?.length);
+        
+        if (error) throw error;
+        return data || [];
+      } catch (err) {
+        console.error("❌ Error fetching vaccinations:", err);
+        throw err;
+      }
     },
-    enabled: !!user,
   });
 
   const { data: vaccinationSchedules = [] } = useQuery({
@@ -110,12 +119,30 @@ const VaccinationNutrition = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["citizen_vaccinations", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["citizen_vaccinations"] });
       setOpen(false);
       setForm({ vaccine_type: "", patient_name: "", preferred_date: "", preferred_center: "", notes: "" });
       toast.success("Vaccination appointment request submitted");
     },
     onError: (e: Error) => toast.error(e.message || "Failed to submit vaccination request"),
+  });
+
+  // Delete Vaccination Mutation
+  const deleteVaccinationMutation = useMutation({
+    mutationFn: async (vaccinationId: string) => {
+      const { error } = await supabase
+        .from("vaccinations")
+        .delete()
+        .eq("id", vaccinationId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["citizen_vaccinations"] });
+      setDetailModal(false);
+      setSelectedVaccination(null);
+      toast.success("Vaccination record deleted successfully");
+    },
+    onError: (e: Error) => toast.error(e.message || "Failed to delete vaccination record"),
   });
 
   const scheduled = vaccinations.filter(v => v.status === "scheduled");
@@ -304,30 +331,38 @@ const VaccinationNutrition = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-xs">Reference ID</TableHead>
                   <TableHead className="text-xs">Date</TableHead>
                   <TableHead className="text-xs">Vaccine</TableHead>
                   <TableHead className="text-xs">Child</TableHead>
-                  <TableHead className="text-xs hidden md:table-cell">BHW</TableHead>
                   <TableHead className="text-xs">Status</TableHead>
+                  <TableHead className="text-xs">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {vaccinations.map((v) => (
                   <TableRow 
-                    key={v.id} 
+                    key={v.id}
                     className="cursor-pointer hover:bg-accent/50"
                     onClick={() => {
                       setSelectedVaccination(v);
                       setDetailModal(true);
                     }}
                   >
-                    <TableCell className="text-xs font-mono text-muted-foreground">{v.id}</TableCell>
                     <TableCell className="text-sm">{v.vaccination_date}</TableCell>
-                    <TableCell className="text-sm">{v.vaccine}</TableCell>
+                    <TableCell className="text-sm font-medium">{v.vaccine}</TableCell>
                     <TableCell className="text-sm">{v.patient_name}</TableCell>
-                    <TableCell className="text-sm hidden md:table-cell">{v.bhw_name}</TableCell>
                     <TableCell><StatusBadge status={v.status} /></TableCell>
+                    <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                        onClick={() => deleteVaccinationMutation.mutate(v.id)}
+                        disabled={deleteVaccinationMutation.isPending}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

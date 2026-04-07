@@ -3,10 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { QRCodeSVG } from "qrcode.react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import {
   QrCode, HeartPulse, Syringe, FileText, MessageSquare,
   Building2, FileCheck, Search, Activity, Calendar, Clock,
-  TrendingUp, Users, Shield, AlertCircle
+  TrendingUp, Users, Shield, AlertCircle, CreditCard, File,
+  ChevronRight
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -16,6 +18,7 @@ import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 const CitizenDashboard = () => {
   const { user, currentRole, hasEstablishments, userName } = useAuth();
   const navigate = useNavigate();
+  const [activeActivityTab, setActiveActivityTab] = useState<"all" | "requests" | "payments" | "complaints">("all");
   
   // Enable real-time notifications for citizen
   useRealtimeNotifications(user?.id);
@@ -63,8 +66,8 @@ const CitizenDashboard = () => {
   const { data: vaccinationSchedules = [] } = useQuery({
     queryKey: ["citizen_vax_schedules", user?.id],
     queryFn: async () => {
-      const { data } = await (supabase as any).from("vaccination_schedules").select("id, vaccine as vaccine_name, schedule_date as scheduled_date").order("schedule_date", { ascending: false }).limit(3);
-      return (data || []).map(item => ({ ...item, status: 'scheduled' }));
+      const { data } = await supabase.from("vaccinations").select("id, vaccine, vaccination_date").order("vaccination_date", { ascending: false }).limit(3);
+      return (data || []).map(item => ({ ...item, vaccine_name: item.vaccine, scheduled_date: item.vaccination_date, status: 'scheduled' }));
     },
     enabled: !!user,
   });
@@ -81,7 +84,7 @@ const CitizenDashboard = () => {
   const { data: permits = [] } = useQuery({
     queryKey: ["citizen_permits_summary", user?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("resident_permits").select("id, status");
+      const { data } = await supabase.from("resident_permits").select("id, status, created_at");
       return data || [];
     },
     enabled: !!user && establishments.length > 0,
@@ -98,126 +101,173 @@ const CitizenDashboard = () => {
     ...complaints.slice(0, 2).map(item => ({ ...item, type: 'complaint', date: item.created_at })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
 
+  const upcomingVaccineSchedule = vaccinationSchedules.length > 0 ? vaccinationSchedules[0] : null;
+  const nextVaccineDate = upcomingVaccineSchedule?.scheduled_date 
+    ? new Date(upcomingVaccineSchedule.scheduled_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : "TBD";
+
+  // Filter activity based on selected tab
+  const getFilteredActivity = () => {
+    switch(activeActivityTab) {
+      case "requests":
+        return serviceRequests.slice(0, 5).map(item => ({ ...item, type: 'service_request', date: item.created_at }));
+      case "complaints":
+        return complaints.slice(0, 5).map(item => ({ ...item, type: 'complaint', date: item.created_at }));
+      case "payments":
+        return permits.slice(0, 5).map(item => ({ ...item, type: 'payment', date: item.created_at }));
+      default:
+        return recentActivity;
+    }
+  };
+
+  const filteredActivity = getFilteredActivity();
+
   return (
-    <div className="space-y-8">
-      {/* Welcome Section */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold font-heading">
-          Welcome back, {userName?.split(' ')[0] || 'Citizen'}! 👋
-        </h1>
-        <p className="text-muted-foreground">
-          Here's your health and sanitation services overview for today.
-        </p>
+    <div className="space-y-6 pb-8">
+      {/* Welcome Banner */}
+      <div className="bg-emerald-700 dark:bg-emerald-750 rounded-xl p-8 text-white shadow-lg">
+        <p className="text-sm font-medium opacity-90">Good Day!</p>
+        <h1 className="text-3xl font-bold mt-1 mb-2">Welcome back, {userName?.split(' ')[0] || 'Citizen'}!</h1>
+        <p className="text-sm opacity-90 mb-4">You have {activeRequests + pendingComplaints} pending actions that need your attention.</p>
+        <Button 
+          onClick={() => setActiveActivityTab("all")}
+          className="bg-white text-emerald-600 hover:bg-emerald-50 font-medium"
+        >
+          View Pending Actions
+        </Button>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="text-center p-4">
-          <div className="flex items-center justify-center mb-2">
-            <FileText className="h-6 w-6 text-blue-500" />
+        <Card className="text-center p-6 border-0 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-teal-100 mx-auto mb-3">
+            <FileText className="h-6 w-6 text-teal-600" />
           </div>
           <div className="text-2xl font-bold">{serviceRequests.length}</div>
-          <div className="text-xs text-muted-foreground">Total Requests</div>
+          <div className="text-xs text-muted-foreground mt-1">Total Requests</div>
+          <div className="text-xs text-emerald-600 font-medium mt-1">+{activeRequests} this month</div>
         </Card>
-        <Card className="text-center p-4">
-          <div className="flex items-center justify-center mb-2">
-            <AlertCircle className="h-6 w-6 text-orange-500" />
+
+        <Card className="text-center p-6 border-0 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 mx-auto mb-3">
+            <AlertCircle className="h-6 w-6 text-amber-600" />
           </div>
           <div className="text-2xl font-bold">{pendingComplaints}</div>
-          <div className="text-xs text-muted-foreground">Active Complaints</div>
+          <div className="text-xs text-muted-foreground mt-1">Active Complaints</div>
+          <div className="text-xs text-amber-600 font-medium mt-1">{pendingComplaints} pending review</div>
         </Card>
-        <Card className="text-center p-4">
-          <div className="flex items-center justify-center mb-2">
-            <Calendar className="h-6 w-6 text-green-500" />
+
+        <Card className="text-center p-6 border-0 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 mx-auto mb-3">
+            <Calendar className="h-6 w-6 text-blue-600" />
           </div>
           <div className="text-2xl font-bold">{vaccinationSchedules.length}</div>
-          <div className="text-xs text-muted-foreground">Upcoming Vaccines</div>
+          <div className="text-xs text-muted-foreground mt-1">Upcoming Vaccines</div>
+          <div className="text-xs text-blue-600 font-medium mt-1">Next {nextVaccineDate}</div>
         </Card>
-        <Card className="text-center p-4">
-          <div className="flex items-center justify-center mb-2">
-            <Shield className="h-6 w-6 text-purple-500" />
+
+        <Card className="text-center p-6 border-0 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 mx-auto mb-3">
+            <Shield className="h-6 w-6 text-purple-600" />
           </div>
           <div className="text-2xl font-bold">{vaccinations.filter(v => v.status === 'completed').length}</div>
-          <div className="text-xs text-muted-foreground">Vaccinations Done</div>
+          <div className="text-xs text-muted-foreground mt-1">Vaccinations Done</div>
+          <div className="text-xs text-purple-600 font-medium mt-1">All up to date</div>
         </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Quick Actions</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card
-            className="p-4 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200"
-            onClick={() => navigate("/citizen/health")}
-          >
-            <div className="flex flex-col items-center text-center space-y-2">
-              <HeartPulse className="h-8 w-8 text-red-500" />
-              <span className="text-sm font-medium">Request Service</span>
-            </div>
-          </Card>
-          <Card
-            className="p-4 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200"
-            onClick={() => navigate("/citizen/vaccination")}
-          >
-            <div className="flex flex-col items-center text-center space-y-2">
-              <Syringe className="h-8 w-8 text-blue-500" />
-              <span className="text-sm font-medium">View Vaccines</span>
-            </div>
-          </Card>
-          <Card
-            className="p-4 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200"
-            onClick={() => navigate("/reports-complaints")}
-          >
-            <div className="flex flex-col items-center text-center space-y-2">
-              <MessageSquare className="h-8 w-8 text-orange-500" />
-              <span className="text-sm font-medium">File Complaint</span>
-            </div>
-          </Card>
-          <Card
-            className="p-4 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200"
-            onClick={() => navigate("/citizen/qr")}
-          >
-            <div className="flex flex-col items-center text-center space-y-2">
-              <QrCode className="h-8 w-8 text-green-500" />
-              <span className="text-sm font-medium">View QR ID</span>
-            </div>
-          </Card>
-        </div>
       </div>
 
       {/* Recent Activity */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Recent Activity</h2>
-        <Card className="p-6">
-          {recentActivity.length > 0 ? (
-            <div className="space-y-3">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div className="flex items-center gap-3">
-                    {activity.type === 'service_request' ? (
-                      <FileText className="h-4 w-4 text-blue-500" />
-                    ) : (
-                      <MessageSquare className="h-4 w-4 text-orange-500" />
-                    )}
-                    <div>
-                      <p className="text-sm font-medium">
-                        {activity.type === 'service_request' ? activity.title : `Complaint: ${activity.complaint_type}`}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(activity.date).toLocaleDateString()}
-                      </p>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold">Recent Activity</h2>
+        </div>
+        
+        {/* Tabs */}
+        <div className="flex gap-2 border-b">
+          {[
+            { id: "all", label: "All" },
+            { id: "requests", label: "Requests" },
+            { id: "payments", label: "Payments" },
+            { id: "complaints", label: "Complaints" }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveActivityTab(tab.id as any)}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                activeActivityTab === tab.id
+                  ? "border-emerald-500 text-emerald-600"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Activity List */}
+        <Card className="border-0 shadow-sm p-0 divide-y">
+          {filteredActivity.length > 0 ? (
+            <div>
+              {filteredActivity.map((activity, index) => (
+                <div key={index} className="p-4 hover:bg-gray-50 transition-colors cursor-pointer group">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="flex-shrink-0">
+                        {activity.type === 'service_request' ? (
+                          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100">
+                            <FileText className="h-5 w-5 text-blue-600" />
+                          </div>
+                        ) : activity.type === 'payment' ? (
+                          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-100">
+                            <CreditCard className="h-5 w-5 text-green-600" />
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-orange-100">
+                            <MessageSquare className="h-5 w-5 text-orange-600" />
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {activity.type === 'service_request' 
+                            ? activity.title 
+                            : activity.type === 'payment'
+                            ? `Fee Payment`
+                            : `Complaint: ${activity.complaint_type}`}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(activity.date).toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
                     </div>
+                    <Badge 
+                      className={`group-hover:bg-opacity-80 transition-all ${
+                        activity.status === 'pending' || activity.status === 'Pending'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : activity.status === 'approved' || activity.status === 'completed'
+                          ? 'bg-green-100 text-green-800'
+                          : activity.status === 'paid'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                      variant="outline"
+                    >
+                      {activity.status}
+                    </Badge>
                   </div>
-                  <Badge variant={activity.status === 'pending' || activity.status === 'Pending' ? 'secondary' : 'default'}>
-                    {activity.status}
-                  </Badge>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <Activity className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>No recent activity</p>
+            <div className="text-center py-12 text-muted-foreground">
+              <Activity className="h-12 w-12 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">No {activeActivityTab === 'all' ? '' : activeActivityTab} activity yet</p>
             </div>
           )}
         </Card>

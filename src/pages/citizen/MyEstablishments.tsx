@@ -10,7 +10,7 @@ import StatusBadge from "@/components/StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
-import { Plus, Building2, AlertCircle, Calendar } from "lucide-react";
+import { Plus, Building2, AlertCircle, Calendar, Edit2, Upload, FileText, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 const BUSINESS_TYPES = [
@@ -31,13 +31,26 @@ const BUSINESS_TYPES = [
 ];
 
 const MyEstablishments = () => {
-  const { user, userName } = useAuth();
+  const { user, userName, refreshEstablishments } = useAuth();
   const [open, setOpen] = useState(false);
   const [selectedEstablishment, setSelectedEstablishment] = useState<any>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
   const [form, setForm] = useState({
+    business_name: "",
+    business_type: "",
+    address: "",
+    barangay: "",
+    contact_number: "",
+    business_permit_number: "",
+    issuing_lgu: "",
+    permit_expiry_date: "",
+  });
+  const [editForm, setEditForm] = useState({
     business_name: "",
     business_type: "",
     address: "",
@@ -102,12 +115,80 @@ const MyEstablishments = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["citizen_establishments"] });
+      refreshEstablishments();
       setOpen(false);
       setValidationErrors({});
       setForm({ business_name: "", business_type: "", address: "", barangay: "", contact_number: "", business_permit_number: "", issuing_lgu: "", permit_expiry_date: "" });
       toast.success("Establishment registration submitted for verification");
     },
     onError: (e: Error) => toast.error(e.message),
+  });
+
+  const editMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedEstablishment) throw new Error("No establishment selected");
+      const { error } = await supabase
+        .from("establishments")
+        .update({
+          business_name: editForm.business_name,
+          business_type: editForm.business_type,
+          address: editForm.address,
+          barangay: editForm.barangay,
+          contact_number: editForm.contact_number,
+          business_permit_number: editForm.business_permit_number,
+          issuing_lgu: editForm.issuing_lgu,
+          permit_expiry_date: editForm.permit_expiry_date || null,
+        })
+        .eq("id", selectedEstablishment.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["citizen_establishments"] });
+      setEditOpen(false);
+      setIsEditing(false);
+      setSelectedEstablishment(null);
+      setDetailsOpen(false);
+      toast.success("Establishment updated successfully");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedEstablishment || uploadFiles.length === 0) throw new Error("No files to upload");
+      
+      const uploadedFiles = [];
+      for (const file of uploadFiles) {
+        const fileName = `${selectedEstablishment.id }/${Date.now()}-${file.name}`;
+        const { error } = await supabase.storage
+          .from("establishment_documents")
+          .upload(fileName, file);
+        if (error) throw error;
+        uploadedFiles.push(file.name);
+      }
+      
+      // Update establishment with file references
+      const { data: currentData } = await supabase
+        .from("establishments")
+        .select("uploaded_documents")
+        .eq("id", selectedEstablishment.id)
+        .single();
+      
+      const existingDocs = currentData?.uploaded_documents || [];
+      const { error: updateError } = await supabase
+        .from("establishments")
+        .update({ uploaded_documents: [...existingDocs, ...uploadedFiles] })
+        .eq("id", selectedEstablishment.id);
+      
+      if (updateError) throw updateError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["citizen_establishments"] });
+      setUploadFiles([]);
+      setSelectedEstablishment(null);
+      toast.success("Documents uploaded successfully");
+    },
+    onError: (e: Error) => toast.error(e.message || "Failed to upload documents"),
   });
 
   const statusLabel = (s: string) => {
@@ -251,20 +332,39 @@ const MyEstablishments = () => {
                     <TableHead className="text-xs hidden md:table-cell">Address</TableHead>
                     <TableHead className="text-xs hidden md:table-cell">Permit #</TableHead>
                     <TableHead className="text-xs">Status</TableHead>
+                    <TableHead className="text-xs">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {establishments.map(e => (
                     <TableRow 
-                      key={e.id} 
-                      onClick={() => openDetails(e)}
+                      key={e.id}
                       className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => {
+                        setSelectedEstablishment(e);
+                        setEditForm(e);
+                        setDetailsOpen(true);
+                      }}
                     >
                       <TableCell className="font-medium text-sm">{e.business_name}</TableCell>
                       <TableCell className="text-sm">{e.business_type}</TableCell>
                       <TableCell className="text-sm hidden md:table-cell">{e.address}</TableCell>
                       <TableCell className="text-sm hidden md:table-cell">{e.business_permit_number}</TableCell>
                       <TableCell><StatusBadge status={statusLabel(e.status)} /></TableCell>
+                      <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950"
+                          onClick={() => {
+                            setSelectedEstablishment(e);
+                            setEditForm(e);
+                            setEditOpen(true);
+                          }}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -286,7 +386,7 @@ const MyEstablishments = () => {
 
       {/* Details Modal */}
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-heading text-base">Establishment Details</DialogTitle>
           </DialogHeader>
@@ -338,6 +438,22 @@ const MyEstablishments = () => {
                   <div className="mt-1"><StatusBadge status={statusLabel(selectedEstablishment.status)} /></div>
                 </div>
               </div>
+              
+              {/* Uploaded Documents Section */}
+              {selectedEstablishment.uploaded_documents && selectedEstablishment.uploaded_documents.length > 0 && (
+                <div className="pt-3 border-t">
+                  <p className="text-xs font-semibold mb-2">Uploaded Documents:</p>
+                  <div className="space-y-1">
+                    {selectedEstablishment.uploaded_documents.map((doc: string, idx: number) => (
+                      <div key={idx} className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <FileText className="h-3 w-3" />
+                        {doc}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               {selectedEstablishment.status === "requires_correction" && selectedEstablishment.reviewer_notes && (
                 <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20 flex gap-2">
                   <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
@@ -347,6 +463,131 @@ const MyEstablishments = () => {
                   </div>
                 </div>
               )}
+              
+              <div className="pt-3 border-t flex gap-2">
+                <Button 
+                  onClick={() => setDetailsOpen(false)}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                >
+                  Close
+                </Button>
+                <Dialog open={editOpen} onOpenChange={setEditOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="default"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      <Edit2 className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="font-heading">Edit Establishment</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-3">
+                      <div>
+                        <Label className="text-xs">Business Name</Label>
+                        <Input 
+                          value={editForm.business_name} 
+                          onChange={e => setEditForm({ ...editForm, business_name: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Business Type</Label>
+                        <Select value={editForm.business_type} onValueChange={(value) => setEditForm({ ...editForm, business_type: value })}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {BUSINESS_TYPES.map((type) => (
+                              <SelectItem key={type} value={type}>{type}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Address</Label>
+                        <Input 
+                          value={editForm.address} 
+                          onChange={e => setEditForm({ ...editForm, address: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Barangay</Label>
+                        <Input 
+                          value={editForm.barangay} 
+                          onChange={e => setEditForm({ ...editForm, barangay: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Contact Number</Label>
+                        <Input value={editForm.contact_number} onChange={e => setEditForm({ ...editForm, contact_number: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Business Permit Number</Label>
+                        <Input 
+                          value={editForm.business_permit_number} 
+                          onChange={e => {
+                            const value = e.target.value.replace(/\D/g, '');
+                            setEditForm({ ...editForm, business_permit_number: value });
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Issuing LGU</Label>
+                        <Input value={editForm.issuing_lgu} onChange={e => setEditForm({ ...editForm, issuing_lgu: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Business Permit Expiry Date</Label>
+                        <Input 
+                          type="date" 
+                          value={editForm.permit_expiry_date} 
+                          onChange={e => setEditForm({ ...editForm, permit_expiry_date: e.target.value })}
+                        />
+                      </div>
+                      
+                      {/* File Upload Section */}
+                      <div className="pt-3 border-t">
+                        <Label className="text-xs mb-2 block">Upload Additional Documents or Correction Notice</Label>
+                        <Input 
+                          type="file" 
+                          multiple 
+                          onChange={(e) => setUploadFiles(Array.from(e.target.files || []))}
+                          className="text-xs"
+                        />
+                        {uploadFiles.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {uploadFiles.map((f, idx) => (
+                              <div key={idx} className="text-xs text-muted-foreground flex items-center gap-2">
+                                <FileText className="h-3 w-3" />
+                                {f.name}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <Button 
+                          onClick={() => uploadMutation.mutate()}
+                          variant="outline"
+                          size="sm"
+                          className="mt-2 w-full gap-1"
+                          disabled={uploadMutation.isPending || uploadFiles.length === 0}
+                        >
+                          <Upload className="h-4 w-4" />
+                          {uploadMutation.isPending ? "Uploading..." : "Upload Documents"}
+                        </Button>
+                      </div>
+                      
+                      <Button className="w-full" onClick={() => editMutation.mutate()} disabled={editMutation.isPending}>
+                        {editMutation.isPending ? "Saving..." : "Save Changes"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
           )}
         </DialogContent>

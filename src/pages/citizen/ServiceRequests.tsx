@@ -1,17 +1,20 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import StatusBadge from "@/components/StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
-import { FileText, AlertCircle } from "lucide-react";
+import { FileText, AlertCircle, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 const ServiceRequests = () => {
   const { user } = useAuth();
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["citizen_service_requests", user?.id],
@@ -95,6 +98,38 @@ const ServiceRequests = () => {
     enabled: !!user,
   });
 
+  // Delete Mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (request: any) => {
+      if (request.type === 'vaccination') {
+        const { error } = await supabase
+          .from('vaccinations')
+          .delete()
+          .eq('id', request.original.id);
+        if (error) throw error;
+      } else if (request.type === 'establishment') {
+        const { error } = await supabase
+          .from('establishments')
+          .delete()
+          .eq('id', request.original.id);
+        if (error) throw error;
+      } else if (request.type === 'service') {
+        const { error } = await supabase
+          .from('service_requests')
+          .delete()
+          .eq('id', request.id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["citizen_service_requests"] });
+      setDetailsOpen(false);
+      setSelectedRequest(null);
+      toast.success("Request deleted successfully");
+    },
+    onError: (e: Error) => toast.error(e.message || "Failed to delete request"),
+  });
+
   const openDetails = (request: any) => {
     setSelectedRequest(request);
     setDetailsOpen(true);
@@ -134,20 +169,38 @@ const ServiceRequests = () => {
                     <TableHead className="text-xs">Title</TableHead>
                     <TableHead className="text-xs hidden md:table-cell">Description</TableHead>
                     <TableHead className="text-xs">Status</TableHead>
+                    <TableHead className="text-xs">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {requests.map(r => (
                     <TableRow 
                       key={r.id}
-                      onClick={() => openDetails(r)}
-                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      className="hover:bg-muted/50 transition-colors"
                     >
                       <TableCell className="text-sm">{new Date(r.created_at).toLocaleDateString()}</TableCell>
                       <TableCell className="text-sm">{r.request_type}</TableCell>
                       <TableCell className="font-medium text-sm">{r.title}</TableCell>
                       <TableCell className="text-sm hidden md:table-cell text-muted-foreground line-clamp-1">{cleanDescription(r.description)}</TableCell>
                       <TableCell><StatusBadge status={r.status} /></TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => openDetails(r)}
+                        >
+                          View
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                          onClick={() => deleteMutation.mutate(r)}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -229,6 +282,25 @@ const ServiceRequests = () => {
                   <p className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-1">Status Information</p>
                   <p className="text-xs text-blue-800 dark:text-blue-200">You will receive updates on the status of this request through your registered contact information.</p>
                 </div>
+              </div>
+              <div className="pt-4 border-t flex gap-2">
+                <Button 
+                  onClick={() => setDetailsOpen(false)}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                >
+                  Close
+                </Button>
+                <Button 
+                  onClick={() => deleteMutation.mutate(selectedRequest)}
+                  variant="destructive"
+                  size="sm"
+                  disabled={deleteMutation.isPending}
+                  className="flex-1"
+                >
+                  {deleteMutation.isPending ? "Deleting..." : "Delete"}
+                </Button>
               </div>
             </div>
           )}

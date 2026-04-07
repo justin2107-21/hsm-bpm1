@@ -17,7 +17,7 @@ const StatCard = ({ title, value, icon: Icon, description, trend, className }: S
       <Card className={cn("glass-card hover:shadow-md transition-shadow", className)}>
         <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
           <CardTitle className="text-xs font-medium text-muted-foreground">{title}</CardTitle>
-          <Icon className="h-4 w-4 text-primary" />
+          <Icon className="h-4 w-4 text-primary dark:text-white" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold font-heading">{value}</div>

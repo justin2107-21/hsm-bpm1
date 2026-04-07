@@ -1,5 +1,14 @@
 const { createClient } = require('@supabase/supabase-js');
 
+// Generate a UUID v4 without external dependency
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0,
+      v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 exports.handler = async (event, context) => {
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
@@ -35,10 +44,11 @@ exports.handler = async (event, context) => {
     const { data, error } = await supabase
       .from('vaccinations')
       .insert({
+        id: generateUUID(),
         user_id,
         patient_name,
         vaccine,
-        preferred_date: preferred_date || null,
+        vaccination_date: preferred_date || null,
         health_center: health_center || null,
         notes: notes || null,
         status: 'pending',

@@ -11,7 +11,7 @@ import StatusBadge from "@/components/StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
-import { Plus, ShieldAlert, MessageSquare } from "lucide-react";
+import { Plus, ShieldAlert, MessageSquare, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 const BARANGAYS = [
@@ -154,6 +154,42 @@ const CitizenReportsComplaints = () => {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Delete Disease Report Mutation
+  const deleteDiseaseReportMutation = useMutation({
+    mutationFn: async (reportId: string) => {
+      const { error } = await supabase
+        .from("disease_reports")
+        .delete()
+        .eq("id", reportId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["citizen_disease_reports"] });
+      setDiseaseDetailOpen(false);
+      setSelectedDiseaseReport(null);
+      toast.success("Disease report deleted successfully");
+    },
+    onError: (e: Error) => toast.error(e.message || "Failed to delete report"),
+  });
+
+  // Delete Sanitation Complaint Mutation
+  const deleteComplaintMutation = useMutation({
+    mutationFn: async (complaintId: string) => {
+      const { error } = await supabase
+        .from("sanitation_complaints")
+        .delete()
+        .eq("complaint_id", complaintId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["citizen_complaints"] });
+      setSanitationDetailOpen(false);
+      setSelectedComplaint(null);
+      toast.success("Complaint deleted successfully");
+    },
+    onError: (e: Error) => toast.error(e.message || "Failed to delete complaint"),
+  });
+
   return (
     <div className="space-y-6">
       <div>
@@ -259,6 +295,7 @@ const CitizenReportsComplaints = () => {
                       <TableHead className="text-xs">Disease</TableHead>
                       <TableHead className="text-xs">Location</TableHead>
                       <TableHead className="text-xs">Status</TableHead>
+                      <TableHead className="text-xs">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -276,6 +313,17 @@ const CitizenReportsComplaints = () => {
                         <TableCell className="text-sm">{c.patient_location}</TableCell>
                         <TableCell>
                           <StatusBadge status={c.status} />
+                        </TableCell>
+                        <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                            onClick={() => deleteDiseaseReportMutation.mutate(c.id)}
+                            disabled={deleteDiseaseReportMutation.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -380,6 +428,7 @@ const CitizenReportsComplaints = () => {
                       <TableHead className="text-xs">Type</TableHead>
                       <TableHead className="text-xs">Location</TableHead>
                       <TableHead className="text-xs">Status</TableHead>
+                      <TableHead className="text-xs">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -397,6 +446,17 @@ const CitizenReportsComplaints = () => {
                         <TableCell className="text-sm">{c.location}</TableCell>
                         <TableCell>
                           <StatusBadge status={c.status} />
+                        </TableCell>
+                        <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                            onClick={() => deleteComplaintMutation.mutate(c.complaint_id || c.id)}
+                            disabled={deleteComplaintMutation.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -440,6 +500,25 @@ const CitizenReportsComplaints = () => {
                 <p className="text-xs font-semibold text-muted-foreground uppercase">Status</p>
                 <div className="mt-1"><StatusBadge status={selectedDiseaseReport.status} /></div>
               </div>
+              <div className="pt-4 border-t flex gap-2">
+                <Button 
+                  onClick={() => setDiseaseDetailOpen(false)}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                >
+                  Close
+                </Button>
+                <Button 
+                  onClick={() => deleteDiseaseReportMutation.mutate(selectedDiseaseReport.id)}
+                  variant="destructive"
+                  size="sm"
+                  disabled={deleteDiseaseReportMutation.isPending}
+                  className="flex-1"
+                >
+                  {deleteDiseaseReportMutation.isPending ? "Deleting..." : "Delete"}
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
@@ -480,6 +559,25 @@ const CitizenReportsComplaints = () => {
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase">Status</p>
                 <div className="mt-1"><StatusBadge status={selectedComplaint.status} /></div>
+              </div>
+              <div className="pt-4 border-t flex gap-2">
+                <Button 
+                  onClick={() => setSanitationDetailOpen(false)}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                >
+                  Close
+                </Button>
+                <Button 
+                  onClick={() => deleteComplaintMutation.mutate(selectedComplaint.complaint_id || selectedComplaint.id)}
+                  variant="destructive"
+                  size="sm"
+                  disabled={deleteComplaintMutation.isPending}
+                  className="flex-1"
+                >
+                  {deleteComplaintMutation.isPending ? "Deleting..." : "Delete"}
+                </Button>
               </div>
             </div>
           )}

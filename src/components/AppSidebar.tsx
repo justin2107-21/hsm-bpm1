@@ -24,6 +24,7 @@ import {
   PlugZap,
   ScanLine,
 } from "lucide-react";
+import { useMemo } from "react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth, type UserRole } from "@/contexts/AuthContext";
 import {
@@ -121,7 +122,6 @@ const citizenSections: NavSection[] = [
   },
   {
     label: "Business Services",
-    showIf: (_role, hasEstablishments) => hasEstablishments,
     items: [
       { title: "Sanitary Permit", url: "/citizen/sanitary-permit", icon: FileCheck },
       { title: "Inspection Status", url: "/citizen/inspections", icon: Search },
@@ -154,195 +154,187 @@ export function AppSidebar() {
 
   const isCitizen = currentRole === "Citizen_User" || currentRole === "BusinessOwner_User";
 
-  let sections: NavSection[];
+  const sections = useMemo(() => {
+    let navSections: NavSection[];
 
-  if (isCitizen) {
-    sections = citizenSections.filter(
-      (s) => !s.showIf || s.showIf(currentRole, hasEstablishments || currentRole === "BusinessOwner_User"),
-    );
-  } else if (currentRole === "BHW_User") {
-    sections = bhwSections;
-  } else if (currentRole === "Clerk_User") {
-    sections = [
-      { label: "Dashboard", items: [{ title: "Dashboard", url: "/", icon: LayoutDashboard }] },
-      {
-        label: "Citizen Services",
-        items: [
-          { title: "Scan QR Citizen ID", url: "/staff/scan-qr", icon: ScanLine },
-          { title: "Citizen Registration", url: "/staff/citizen-registration", icon: UserPlus },
-          { title: "Citizen Search", url: "/staff/search-citizens", icon: UserSearch },
-        ],
-      },
-      {
-        label: "Consultations",
-        items: [
-          { title: "New Consultation", url: "/health-center", icon: Stethoscope },
-          { title: "Consultation Records", url: "/health-center", icon: FileText },
-        ],
-      },
-      {
-        label: "Health Assessments",
-        items: [
-          { title: "Perform Health Assessment", url: "/staff/assessments", icon: HeartPulse },
-          { title: "Assessment Records", url: "/staff/assessments", icon: Search },
-        ],
-      },
-      {
-        label: "Vaccination Services",
-        items: [
-          { title: "Vaccination Queue", url: "/immunization", icon: Syringe },
-          { title: "Immunization Records", url: "/immunization", icon: FileText },
-          { title: "Vaccination Scheduling", url: "/staff/requests", icon: CalendarDays },
-        ],
-      },
-      {
-        label: "Sanitation Permit Processing",
-        items: [
-          { title: "Document Verification", url: "/staff/permit-verification", icon: ClipboardCheck },
-          { title: "Permit Applications", url: "/sanitation-permit", icon: FileCheck },
-        ],
-      },
-      {
-        label: "Disease Surveillance",
-        items: [
-          { title: "Report Disease Case", url: "/surveillance", icon: ShieldAlert },
-          { title: "Disease Monitoring", url: "/surveillance", icon: Activity },
-        ],
-      },
-      {
-        label: "Requests Management",
-        items: [
-          { title: "ASSISTED REQUEST & TRACKING", url: "/staff/requests", icon: FileText },
-        ],
-      },
-    ];
-  } else if (currentRole === "BSI_User") {
-    sections = [
-      { label: "Dashboard", items: [{ title: "Dashboard", url: "/", icon: LayoutDashboard }] },
-      {
-        label: "Inspection Management",
-        items: [
-          { title: "Assigned Inspections", url: "/inspector/assigned-inspections", icon: ClipboardCheck },
-          { title: "Inspection Schedule", url: "/inspector/inspection-schedule", icon: CalendarDays },
-        ],
-      },
-      {
-        label: "Establishments",
-        items: [
-          { title: "Establishment List", url: "/inspector/establishments", icon: Building2 },
-          { title: "Inspection Reports", url: "/inspector/inspection-reports", icon: Search },
-        ],
-      },
-      {
-        label: "Complaints Management",
-        items: [
-          { title: "Complaint Inspections", url: "/inspector/complaint-inspections", icon: MessageSquare },
-        ],
-      },
-      {
-        label: "Compliance & Notices",
-        items: [
-          { title: "Correction Notices", url: "/inspector/correction-notices", icon: Award },
-          { title: "Compliance Monitoring", url: "/inspector/compliance-monitoring", icon: Search },
-        ],
-      },
-      { label: "History", items: [{ title: "Inspection History", url: "/inspector/inspection-history", icon: FileText }] },
-    ];
-  } else if (currentRole === "Captain_User") {
-    sections = [
-      { label: "Dashboard", items: [{ title: "Dashboard", url: "/", icon: LayoutDashboard }] },
-      {
-        label: "Sanitation Permit Authority",
-        items: [
-          { title: "Permit Applications", url: "/sanitation-permit", icon: FileCheck },
-          { title: "Inspection Reports", url: "/citizen/inspections", icon: Search },
-        ],
-      },
-      {
-        label: "Health Surveillance",
-        items: [
-          { title: "Disease Case Monitoring", url: "/surveillance", icon: ShieldAlert },
-          { title: "Disease Mapping Dashboard", url: "/surveillance/map", icon: Map },
-        ],
-      },
-      {
-        label: "Vaccination & Immunization",
-        items: [
-          { title: "Vaccination & Immunization", url: "/immunization", icon: Syringe },
-        ],
-      },
-      {
-        label: "Health Center Operations",
-        items: [
-          { title: "Health Center Reports", url: "/health-center", icon: Stethoscope },
-        ],
-      },
-    ];
-  } else if (currentRole === "LGUAdmin_User") {
-    sections = [
-      { label: "Dashboard", items: [{ title: "Dashboard", url: "/", icon: LayoutDashboard }] },
-      {
-        label: "Municipal Overview",
-        items: [
-          { title: "Real-Time Service Requests", url: "/lgu/requests", icon: FileText },
-          { title: "Citizen Search", url: "/staff/search-citizens", icon: UserSearch },
-        ],
-      },
-      {
-        label: "Health Monitoring",
-        items: [
-          { title: "Disease Mapping Dashboard", url: "/surveillance/map", icon: Map },
-          { title: "Vaccination Coverage", url: "/lgu/vaccination", icon: Syringe },
-        ],
-      },
-      {
-        label: "Sanitation Monitoring",
-        items: [
-          { title: "Active Inspections", url: "/lgu/inspections", icon: ClipboardCheck },
-          { title: "Establishment Compliance", url: "/lgu/compliance", icon: Building2 },
-        ],
-      },
-      { label: "Reports & Analytics", items: [{ title: "Municipal Analytics", url: "/lgu/analytics", icon: BarChart3 }] },
-    ];
-  } else if (currentRole === "SysAdmin_User") {
-    sections = [
-      { label: "Dashboard", items: [{ title: "Dashboard", url: "/", icon: LayoutDashboard }] },
-      {
-        label: "User Management",
-        items: [
-          { title: "View Users", url: "/sys/users", icon: UserSearch },
-          { title: "Create / Edit Users", url: "/sys/users", icon: UserPlus },
-          { title: "Assign Roles", url: "/sys/users", icon: Users },
-          { title: "User Activity Logs", url: "/sys/logs", icon: FileText },
-          { title: "Citizen Search", url: "/staff/search-citizens", icon: UserSearch },
-        ],
-      },
-      {
-        label: "System Overview",
-        items: [
-          { title: "System Health", url: "/sys/monitoring", icon: Activity },
-          { title: "Active Requests", url: "/sys/requests", icon: FileText },
-          { title: "Integration Status", url: "/sys/integrations", icon: PlugZap },
-        ],
-      },
-      {
-        label: "Database Management",
-        items: [
-          { title: "Database Health & Backups", url: "/sys/database", icon: BarChart3 },
-          { title: "Audit Logs", url: "/sys/logs", icon: Search },
-        ],
-      },
-    ];
-  } else {
-    // Other staff roles (Health Center Staff, Inspector, City Health Officer, LGU/System Admin)
-    sections = staffBaseSections.map((s) => ({
-      ...s,
-      items: s.items.filter((item) => {
-        const allowed = staffRoleFilter[item.url];
-        return !allowed || allowed.includes(currentRole);
-      }),
-    }));
-  }
+    if (isCitizen) {
+      navSections = citizenSections.filter(
+        (s) => !s.showIf || s.showIf(currentRole, hasEstablishments || currentRole === "BusinessOwner_User"),
+      );
+    } else if (currentRole === "BHW_User") {
+      navSections = bhwSections;
+    } else if (currentRole === "Clerk_User") {
+      navSections = [
+        { label: "Dashboard", items: [{ title: "Dashboard", url: "/", icon: LayoutDashboard }] },
+        {
+          label: "Citizen Services",
+          items: [
+            { title: "Citizen Search", url: "/staff/search-citizens", icon: UserSearch },
+          ],
+        },
+        {
+          label: "Consultations",
+          items: [
+            { title: "Consultation Records", url: "/health-center", icon: FileText },
+          ],
+        },
+        {
+          label: "Health Assessments",
+          items: [
+            { title: "Citizen Health Assessment", url: "/staff/assessments", icon: Search },
+          ],
+        },
+        {
+          label: "Vaccination Services",
+          items: [
+            { title: "Vaccination Analytics", url: "/immunization", icon: FileText },
+            { title: "Vaccination Scheduling", url: "/staff/requests", icon: CalendarDays },
+          ],
+        },
+        {
+          label: "Sanitation Permit Processing",
+          items: [
+            { title: "Document Verification", url: "/staff/permit-verification", icon: ClipboardCheck },
+            { title: "Permit Applications", url: "/sanitation-permit", icon: FileCheck },
+          ],
+        },
+        {
+          label: "Surveillance",
+          items: [
+            { title: "Disease Monitoring & Reporting", url: "/surveillance", icon: ShieldAlert },
+          ],
+        },
+
+      ];
+    } else if (currentRole === "BSI_User") {
+      navSections = [
+        { label: "Dashboard", items: [{ title: "Dashboard", url: "/", icon: LayoutDashboard }] },
+        {
+          label: "Inspection Management",
+          items: [
+            { title: "Assigned Inspections", url: "/inspector/assigned-inspections", icon: ClipboardCheck },
+            { title: "Inspection Schedule", url: "/inspector/inspection-schedule", icon: CalendarDays },
+          ],
+        },
+        {
+          label: "Establishments",
+          items: [
+            { title: "Establishment List", url: "/inspector/establishments", icon: Building2 },
+            { title: "Inspection Reports", url: "/inspector/inspection-reports", icon: Search },
+          ],
+        },
+        {
+          label: "Complaints Management",
+          items: [
+            { title: "Complaint Inspections", url: "/inspector/complaint-inspections", icon: MessageSquare },
+          ],
+        },
+        {
+          label: "Compliance & Notices",
+          items: [
+            { title: "Correction Notices", url: "/inspector/correction-notices", icon: Award },
+            { title: "Compliance Monitoring", url: "/inspector/compliance-monitoring", icon: Search },
+          ],
+        },
+        { label: "History", items: [{ title: "Inspection History", url: "/inspector/inspection-history", icon: FileText }] },
+      ];
+    } else if (currentRole === "Captain_User") {
+      navSections = [
+        { label: "Dashboard", items: [{ title: "Dashboard", url: "/", icon: LayoutDashboard }] },
+        {
+          label: "Sanitation Permit Authority",
+          items: [
+            { title: "Permit Applications", url: "/sanitation-permit", icon: FileCheck },
+            { title: "Inspection Reports", url: "/citizen/inspections", icon: Search },
+          ],
+        },
+        {
+          label: "Health Surveillance",
+          items: [
+            { title: "Disease Case Monitoring", url: "/surveillance", icon: ShieldAlert },
+            { title: "Disease Mapping Dashboard", url: "/surveillance/map", icon: Map },
+          ],
+        },
+        {
+          label: "Vaccination & Immunization",
+          items: [
+            { title: "Vaccination & Immunization", url: "/immunization", icon: Syringe },
+          ],
+        },
+        {
+          label: "Health Center Operations",
+          items: [
+            { title: "Health Center Reports", url: "/health-center", icon: Stethoscope },
+          ],
+        },
+      ];
+    } else if (currentRole === "LGUAdmin_User") {
+      navSections = [
+        { label: "Dashboard", items: [{ title: "Dashboard", url: "/", icon: LayoutDashboard }] },
+        {
+          label: "Municipal Overview",
+          items: [
+            { title: "Real-Time Service Requests", url: "/lgu/requests", icon: FileText },
+            { title: "Citizen Search", url: "/staff/search-citizens", icon: UserSearch },
+          ],
+        },
+        {
+          label: "Health Monitoring",
+          items: [
+            { title: "Disease Mapping Dashboard", url: "/surveillance/map", icon: Map },
+            { title: "Vaccination Coverage", url: "/lgu/vaccination", icon: Syringe },
+          ],
+        },
+        {
+          label: "Sanitation Monitoring",
+          items: [
+            { title: "Active Inspections", url: "/lgu/inspections", icon: ClipboardCheck },
+            { title: "Establishment Compliance", url: "/lgu/compliance", icon: Building2 },
+          ],
+        },
+        { label: "Reports & Analytics", items: [{ title: "Municipal Analytics", url: "/lgu/analytics", icon: BarChart3 }] },
+      ];
+    } else if (currentRole === "SysAdmin_User") {
+      navSections = [
+        { label: "Dashboard", items: [{ title: "Dashboard", url: "/", icon: LayoutDashboard }] },
+        {
+          label: "User Management",
+          items: [
+            { title: "View Users", url: "/sys/users", icon: UserSearch },
+            { title: "Create / Edit Users", url: "/sys/users", icon: UserPlus },
+            { title: "Assign Roles", url: "/sys/users", icon: Users },
+            { title: "User Activity Logs", url: "/sys/logs", icon: FileText },
+            { title: "Citizen Search", url: "/staff/search-citizens", icon: UserSearch },
+          ],
+        },
+        {
+          label: "System Overview",
+          items: [
+            { title: "System Health", url: "/sys/monitoring", icon: Activity },
+            { title: "Active Requests", url: "/sys/requests", icon: FileText },
+            { title: "Integration Status", url: "/sys/integrations", icon: PlugZap },
+          ],
+        },
+        {
+          label: "Database Management",
+          items: [
+            { title: "Database Health & Backups", url: "/sys/database", icon: BarChart3 },
+            { title: "Audit Logs", url: "/sys/logs", icon: Search },
+          ],
+        },
+      ];
+    } else {
+      navSections = staffBaseSections.map((s) => ({
+        ...s,
+        items: s.items.filter((item) => {
+          const allowed = staffRoleFilter[item.url];
+          return !allowed || allowed.includes(currentRole);
+        }),
+      }));
+    }
+
+    return navSections;
+  }, [currentRole, hasEstablishments, isCitizen]);
 
   return (
     <Sidebar collapsible="icon" className="sidebar-gradient border-r-0">

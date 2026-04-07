@@ -509,7 +509,7 @@ const ServiceDetailModal = ({ service, onClose, onRequest, category, isRequestin
           <div className="flex items-center justify-between gap-3 border-b p-4">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-primary/10 rounded">
-                <IconComponent className="h-4 w-4 text-primary" />
+                <IconComponent className="h-4 w-4 text-primary dark:text-white" />
               </div>
               <div>
                 <DialogTitle className="text-sm font-semibold">{service.title}</DialogTitle>
@@ -664,7 +664,7 @@ const PWDServiceDetailModal = ({ service, onClose, onRequest, isRequesting, setI
                   <ul className="space-y-1">
                     {service.requirements.map((req: string, idx: number) => (
                       <li key={idx} className="flex items-start gap-2 text-sm">
-                        <CheckCircle className="h-3 w-3 text-primary mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="h-3 w-3 text-primary dark:text-green-400 mt-0.5 flex-shrink-0" />
                         <span>{req}</span>
                       </li>
                     ))}
@@ -755,7 +755,7 @@ const ServiceCard = ({ service, onClick }: ServiceCardProps) => {
       <CardContent className="p-6">
         <div className="flex items-start gap-4">
           <div className="p-3 bg-primary/10 rounded-lg flex-shrink-0">
-            <IconComponent className="h-6 w-6 text-primary" />
+            <IconComponent className="h-6 w-6 text-primary dark:text-white" />
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-sm mb-1">{service.title}</h3>
@@ -957,7 +957,7 @@ const HealthServicesHub = () => {
               onClick={() => setShowHelpModal(true)}
               className="gap-2 h-14 px-5 rounded-lg bg-green-50 text-green-900 dark:bg-emerald-600 dark:text-white hover:bg-green-100 dark:hover:bg-emerald-500"
             >
-              <HelpCircle className="h-5 w-5" />
+              <HelpCircle className="h-5 w-5 dark:text-white" />
               <span className="hidden sm:inline">Guide Me</span>
             </Button>
           </div>
@@ -965,7 +965,7 @@ const HealthServicesHub = () => {
           {/* Search & Category Filter */}
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground dark:text-gray-400" />
               <Input
                 placeholder="Search services (e.g., dental, TB, nutrition...)"
                 value={searchQuery}
@@ -1010,7 +1010,7 @@ const HealthServicesHub = () => {
               <section className="space-y-4">
                 <div className="space-y-2">
                   <h2 className="text-lg md:text-xl font-bold font-heading flex items-center gap-2">
-                    <Stethoscope className="h-6 w-6 text-green-600" />
+                    <Stethoscope className="h-6 w-6 text-green-600 dark:text-green-400" />
                     Primary Health Services
                   </h2>
                   <p className="text-sm text-muted-foreground">
@@ -1039,7 +1039,7 @@ const HealthServicesHub = () => {
               <section className="space-y-4">
                 <div className="space-y-2">
                   <h2 className="text-lg md:text-xl font-bold font-heading flex items-center gap-2">
-                    <Shield className="h-6 w-6 text-teal-600" />
+                    <Shield className="h-6 w-6 text-teal-600 dark:text-teal-400" />
                     Preventive Programs
                   </h2>
                   <p className="text-sm text-muted-foreground">
@@ -1068,7 +1068,7 @@ const HealthServicesHub = () => {
               <section className="space-y-4">
                 <div className="space-y-2">
                   <h2 className="text-lg md:text-xl font-bold font-heading flex items-center gap-2">
-                    <Heart className="h-6 w-6 text-purple-600" />
+                    <Heart className="h-6 w-6 text-purple-600 dark:text-purple-400" />
                     Specialized Services
                   </h2>
                   <p className="text-sm text-muted-foreground">
@@ -1097,7 +1097,7 @@ const HealthServicesHub = () => {
               <section className="space-y-4">
                 <div className="space-y-2">
                   <h2 className="text-lg md:text-xl font-bold font-heading flex items-center gap-2">
-                    <Users className="h-7 w-7 text-orange-600" />
+                    <Users className="h-7 w-7 text-orange-600 dark:text-orange-400" />
                     Senior Citizen & PWD Benefits
                   </h2>
                   <p className="text-sm md:text-base text-muted-foreground">
@@ -1171,7 +1171,7 @@ const HealthServicesHub = () => {
             <Card className="overflow-hidden">
               <div className="p-6 border-b flex flex-row items-center justify-between">
                 <div className="text-sm font-semibold flex items-center gap-2">
-                  <HelpCircle className="h-5 w-5" />
+                  <HelpCircle className="h-5 w-5 dark:text-white" />
                   How To Use This Page
                 </div>
               </div>
@@ -1235,7 +1235,7 @@ const HealthServicesHub = () => {
             <Card className="overflow-hidden">
               <div className="p-6 border-b flex flex-row items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
                   <div className="font-semibold">Assistance Request Submitted</div>
                 </div>
               </div>

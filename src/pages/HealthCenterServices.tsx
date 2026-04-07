@@ -84,19 +84,14 @@ const HealthCenterServices = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold font-heading">Health Center Services</h1>
-          <p className="text-sm text-muted-foreground">Patient consultations and health records</p>
-        </div>
-        {!isCaptain && (
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-1">
-                <Plus className="h-4 w-4" /> Add Consultation
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg">
+      <div>
+        <h1 className="text-2xl font-bold font-heading">Health Center Services</h1>
+        <p className="text-sm text-muted-foreground">Patient consultations and health records</p>
+      </div>
+
+      {!isCaptain && (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="max-w-sm">
               <DialogHeader>
                 <DialogTitle className="font-heading">New Consultation</DialogTitle>
               </DialogHeader>
@@ -187,7 +182,6 @@ const HealthCenterServices = () => {
             </DialogContent>
           </Dialog>
         )}
-      </div>
 
       <div className="flex gap-2 items-center">
         <div className="relative flex-1">
@@ -229,7 +223,6 @@ const HealthCenterServices = () => {
                     <TableHead className="text-xs hidden md:table-cell">Date</TableHead>
                     <TableHead className="text-xs hidden lg:table-cell">Diagnosis</TableHead>
                     <TableHead className="text-xs">Status</TableHead>
-                    <TableHead className="text-xs">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -255,19 +248,6 @@ const HealthCenterServices = () => {
                       <TableCell>
                         <StatusBadge status={c.status} />
                       </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedConsult(c);
-                            setDetailOpen(true);
-                          }}
-                        >
-                          View
-                        </Button>
-                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -280,9 +260,9 @@ const HealthCenterServices = () => {
       {/* Consultation Detail Modal */}
       {selectedConsult && (
         <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-sm">
             <DialogHeader>
-              <DialogTitle>Consultation Record - {selectedConsult.patient_name}</DialogTitle>
+              <DialogTitle>Consultation - {selectedConsult.patient_name}</DialogTitle>
             </DialogHeader>
 
             <div className="space-y-4">

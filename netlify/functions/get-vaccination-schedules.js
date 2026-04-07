@@ -26,7 +26,7 @@ exports.handler = async (event, context) => {
     const { data, error } = await supabase
       .from('vaccination_schedules')
       .select('*')
-      .order('vaccine', { ascending: true });
+      .order('schedule_date', { ascending: true });
 
     if (error) {
       console.error('❌ Supabase error:', error);

@@ -52,9 +52,9 @@ const statusMap: Record<
       "bg-green-700 text-emerald-50 border border-green-800 dark:bg-green-500 dark:text-slate-950 dark:border-green-600",
   },
   completed: {
-    variant: "outline",
+    variant: "default",
     className:
-      "bg-gray-100 text-gray-700 border border-gray-300 dark:bg-gray-700/40 dark:text-gray-100 dark:border-gray-500/60",
+      "bg-emerald-500 text-white border border-emerald-600 dark:bg-emerald-400 dark:text-slate-950 dark:border-emerald-500",
   },
 
   // Existing generic statuses mapped to the closest equivalents
@@ -71,32 +71,47 @@ const statusMap: Record<
   pending: {
     variant: "secondary",
     className:
-      "bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-500/20 dark:text-blue-100 dark:border-blue-500/40",
+      "bg-blue-500 text-white border border-blue-600 dark:bg-blue-400 dark:text-slate-950 dark:border-blue-500",
   },
   "in-progress": {
     variant: "secondary",
     className:
-      "bg-sky-100 text-sky-800 border border-sky-200 dark:bg-sky-500/20 dark:text-sky-100 dark:border-sky-500/40",
+      "bg-blue-500 text-white border border-blue-600 dark:bg-blue-400 dark:text-slate-950 dark:border-blue-500",
   },
   scheduled: {
     variant: "secondary",
     className:
-      "bg-sky-100 text-sky-800 border border-sky-200 dark:bg-sky-500/20 dark:text-sky-100 dark:border-sky-500/40",
+      "bg-blue-500 text-white border border-blue-600 dark:bg-blue-400 dark:text-slate-950 dark:border-blue-500",
   },
   rejected: {
     variant: "destructive",
     className:
-      "bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-500/20 dark:text-rose-100 dark:border-rose-500/40",
+      "bg-rose-600 text-rose-50 border border-rose-700 dark:bg-rose-500 dark:text-slate-950 dark:border-rose-600",
   },
   "non-compliant": {
     variant: "destructive",
     className:
-      "bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-500/20 dark:text-rose-100 dark:border-rose-500/40",
+      "bg-rose-600 text-rose-50 border border-rose-700 dark:bg-rose-500 dark:text-slate-950 dark:border-rose-600",
   },
   critical: {
     variant: "destructive",
     className:
       "bg-red-600 text-red-50 border border-red-700 dark:bg-red-500 dark:text-slate-950 dark:border-red-600",
+  },
+  registered: {
+    variant: "default",
+    className:
+      "bg-emerald-500 text-white border border-emerald-600 dark:bg-emerald-400 dark:text-slate-950 dark:border-emerald-500",
+  },
+  "pending_verification": {
+    variant: "secondary",
+    className:
+      "bg-blue-500 text-white border border-blue-600 dark:bg-blue-400 dark:text-slate-950 dark:border-blue-500",
+  },
+  "requires_correction": {
+    variant: "secondary",
+    className:
+      "bg-orange-500 text-white border border-orange-600 dark:bg-orange-400 dark:text-slate-950 dark:border-orange-500",
   },
   resolved: {
     variant: "outline",

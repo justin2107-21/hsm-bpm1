@@ -9,14 +9,30 @@ import { Search } from "lucide-react";
 const InspectionStatus = () => {
   const { user } = useAuth();
 
-  const { data: inspections = [] } = useQuery({
-    queryKey: ["citizen_inspections", user?.id],
+  const { data: establishments = [] } = useQuery({
+    queryKey: ["citizen_establishments", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("inspections").select("*").order("inspection_date", { ascending: false });
+      const { data, error } = await supabase.from("establishments").select("*").eq("user_id", user!.id);
       if (error) throw error;
       return data;
     },
     enabled: !!user,
+  });
+
+  const { data: inspections = [] } = useQuery({
+    queryKey: ["citizen_inspections", user?.id, establishments],
+    queryFn: async () => {
+      if (establishments.length === 0) return [];
+      const establishmentNames = establishments.map((e: any) => e.business_name);
+      const { data, error } = await supabase
+        .from("inspections")
+        .select("*")
+        .in("establishment", establishmentNames)
+        .order("inspection_date", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && establishments.length > 0,
   });
 
   return (

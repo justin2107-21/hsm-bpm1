@@ -25,6 +25,9 @@ const SanitationPermit = () => {
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ business_name: "", owner_name: "", business_type: "", address: "", notes: "" });
+  // State for detail modal
+  const [selectedPermit, setSelectedPermit] = useState<any>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const isBSI = currentRole === "BSI_User";
   const queryClient = useQueryClient();
 
@@ -138,7 +141,7 @@ const SanitationPermit = () => {
             </TableHeader>
             <TableBody>
               {filtered.map((p) => (
-                <TableRow key={p.id}>
+                <TableRow key={p.id} className="cursor-pointer hover:bg-muted/50" onClick={() => { setSelectedPermit(p); setIsDetailOpen(true); }}>
                   <TableCell className="font-medium text-sm">{p.business_name}</TableCell>
                   <TableCell className="text-sm hidden md:table-cell">{p.owner_name}</TableCell>
                   <TableCell className="text-sm hidden md:table-cell">{p.business_type}</TableCell>
@@ -151,6 +154,134 @@ const SanitationPermit = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Modal for displaying full sanitation permit details */}
+      {selectedPermit && (
+        <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="font-heading">Sanitation Permit Details</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              {/* Reference ID */}
+              <div>
+                <p className="text-xs text-muted-foreground">Reference ID</p>
+                <p className="font-medium">{selectedPermit.id}</p>
+              </div>
+
+              {/* Business Name */}
+              <div>
+                <p className="text-xs text-muted-foreground">Business Name</p>
+                <p className="font-medium">{selectedPermit.business_name}</p>
+              </div>
+
+              {/* Owner Name */}
+              {selectedPermit.owner_name && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Owner Name</p>
+                  <p className="font-medium">{selectedPermit.owner_name}</p>
+                </div>
+              )}
+
+              {/* Business Type */}
+              {selectedPermit.business_type && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Business Type</p>
+                  <p className="font-medium">{selectedPermit.business_type}</p>
+                </div>
+              )}
+
+              {/* Address */}
+              {selectedPermit.address && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Address</p>
+                  <p className="font-medium">{selectedPermit.address}</p>
+                </div>
+              )}
+
+              {/* Permit Type */}
+              {selectedPermit.permit_type && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Permit Type</p>
+                  <p className="font-medium">{selectedPermit.permit_type}</p>
+                </div>
+              )}
+
+              {/* Status */}
+              <div>
+                <p className="text-xs text-muted-foreground">Status</p>
+                <StatusBadge status={selectedPermit.status} />
+              </div>
+
+              {/* Application Date */}
+              {selectedPermit.application_date && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Date Submitted</p>
+                  <p className="font-medium">{selectedPermit.application_date}</p>
+                </div>
+              )}
+
+              {/* Issued Date */}
+              {selectedPermit.issued_date && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Date Issued</p>
+                  <p className="font-medium">{selectedPermit.issued_date}</p>
+                </div>
+              )}
+
+              {/* Expiration Date */}
+              {selectedPermit.expiration_date && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Expiration Date</p>
+                  <p className="font-medium">{selectedPermit.expiration_date}</p>
+                </div>
+              )}
+
+              {/* Inspector */}
+              {selectedPermit.inspector && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Inspector</p>
+                  <p className="font-medium">{selectedPermit.inspector}</p>
+                </div>
+              )}
+
+              {/* Notes */}
+              {selectedPermit.notes && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Notes</p>
+                  <p className="font-medium whitespace-pre-wrap text-sm">{selectedPermit.notes}</p>
+                </div>
+              )}
+
+              {/* Additional fields from database */}
+              {Object.entries(selectedPermit)
+                .filter(
+                  ([key]) =>
+                    ![
+                      "id",
+                      "business_name",
+                      "owner_name",
+                      "business_type",
+                      "address",
+                      "permit_type",
+                      "status",
+                      "application_date",
+                      "issued_date",
+                      "expiration_date",
+                      "inspector",
+                      "notes",
+                    ].includes(key),
+                )
+                .map(([key, value]) => (
+                  <div key={key}>
+                    <p className="text-xs text-muted-foreground">{key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}</p>
+                    <p className="font-medium">{value ? String(value) : "N/A"}</p>
+                  </div>
+                ))}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

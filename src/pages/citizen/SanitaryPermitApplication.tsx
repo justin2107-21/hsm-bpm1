@@ -10,17 +10,29 @@ import { FileCheck, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
 const SanitaryPermitApplication = () => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [selectedEstablishmentId, setSelectedEstablishmentId] = useState("");
   const [form, setForm] = useState({
     business_name: "",
     business_type: "",
     address: "",
   });
   const queryClient = useQueryClient();
+
+  const { data: establishments = [] } = useQuery({
+    queryKey: ["citizen_establishments", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("establishments").select("*").eq("user_id", user!.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
 
   const { data: permits = [] } = useQuery({
     queryKey: ["citizen_sanitary_permits", user?.id],
@@ -34,8 +46,10 @@ const SanitaryPermitApplication = () => {
 
   const addMutation = useMutation({
     mutationFn: async () => {
+      if (!selectedEstablishmentId) {
+        throw new Error("Please select an establishment");
+      }
       const { data, error } = await supabase.from("resident_permits").insert({
-        user_id: user!.id,
         business_name: form.business_name,
         business_type: form.business_type || null,
         status: "Submitted",
@@ -46,7 +60,7 @@ const SanitaryPermitApplication = () => {
         user_id: user!.id,
         request_type: "Sanitary Permit Application",
         title: `Sanitary permit — ${form.business_name}`,
-        description: `Business type: ${form.business_type || "N/A"}; Address: ${form.address || "N/A"}`,
+        description: `Business type: ${form.business_type || "N/A"}; Establishment ID: ${selectedEstablishmentId}`,
         status: "Submitted",
         reference_id: data.id,
       });
@@ -55,11 +69,24 @@ const SanitaryPermitApplication = () => {
       queryClient.invalidateQueries({ queryKey: ["citizen_sanitary_permits", user?.id] });
       queryClient.invalidateQueries({ queryKey: ["citizen_requests_summary", user?.id] });
       setOpen(false);
+      setSelectedEstablishmentId("");
       setForm({ business_name: "", business_type: "", address: "" });
       toast.success("Sanitary permit application submitted");
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const handleEstablishmentSelect = (estId: string) => {
+    setSelectedEstablishmentId(estId);
+    const establishment = establishments.find((e: any) => e.id === estId);
+    if (establishment) {
+      setForm({
+        business_name: establishment.business_name,
+        business_type: establishment.business_type,
+        address: establishment.address || "",
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -80,32 +107,36 @@ const SanitaryPermitApplication = () => {
             </DialogHeader>
             <div className="grid gap-3">
               <div>
-                <Label className="text-xs">Business Name</Label>
-                <Input
-                  value={form.business_name}
-                  onChange={(e) => setForm({ ...form, business_name: e.target.value })}
-                />
+                <Label className="text-xs">Select Your Establishment *</Label>
+                {establishments.length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-2">No registered establishments found. Please register one first.</p>
+                ) : (
+                  <Select value={selectedEstablishmentId} onValueChange={handleEstablishmentSelect}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose establishment" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {establishments.map((est: any) => (
+                        <SelectItem key={est.id} value={est.id}>
+                          {est.business_name} ({est.business_type})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <div>
-                <Label className="text-xs">Business Type</Label>
-                <Input
-                  value={form.business_type}
-                  onChange={(e) => setForm({ ...form, business_type: e.target.value })}
-                  placeholder="e.g., Food, Retail"
-                />
+                <Label className="text-xs">Business Name (Read-only)</Label>
+                <Input value={form.business_name} disabled className="bg-muted" />
               </div>
               <div>
-                <Label className="text-xs">Business Address</Label>
-                <Input
-                  value={form.address}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
-                  placeholder="Street, Barangay, City"
-                />
+                <Label className="text-xs">Business Type (Read-only)</Label>
+                <Input value={form.business_type} disabled className="bg-muted" />
               </div>
               <Button
                 className="w-full"
                 onClick={() => addMutation.mutate()}
-                disabled={addMutation.isPending || !form.business_name}
+                disabled={addMutation.isPending || !selectedEstablishmentId}
               >
                 {addMutation.isPending ? "Submitting..." : "Submit Application"}
               </Button>
