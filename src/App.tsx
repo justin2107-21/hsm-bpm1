@@ -40,7 +40,11 @@ import LguAnalytics from "@/pages/lgu/LguAnalytics";
 import LguInspections from "@/pages/lgu/LguInspections";
 import LguCompliance from "@/pages/lgu/LguCompliance";
 import SystemAdminUsers from "@/pages/sys/SystemAdminUsers";
-import SystemAdminPlaceholder from "@/pages/sys/SystemAdminPlaceholder";
+import SystemMonitoring from "@/pages/sys/SystemMonitoring";
+import SystemRequests from "@/pages/sys/SystemRequests";
+import SystemIntegrations from "@/pages/sys/SystemIntegrations";
+import DatabaseHealth from "@/pages/sys/DatabaseHealth";
+import AuditLogs from "@/pages/sys/AuditLogs";
 import SettingsPage from "@/pages/SettingsPage";
 import { CitizenLoginPage } from "@/pages/CitizenLoginPage";
 import { StaffLoginPage } from "@/pages/StaffLoginPage";
@@ -165,11 +169,11 @@ const App = () => (
               <Route path="/lgu/analytics" element={<LguAnalytics />} />
               {/* System Admin routes */}
               <Route path="/sys/users" element={<SystemAdminUsers />} />
-              <Route path="/sys/logs" element={<SystemAdminPlaceholder title="System Logs" />} />
-              <Route path="/sys/monitoring" element={<SystemAdminPlaceholder title="System Monitoring" />} />
-              <Route path="/sys/database" element={<SystemAdminPlaceholder title="Database Management" />} />
-              <Route path="/sys/integrations" element={<SystemAdminPlaceholder title="Integration Monitoring" />} />
-              <Route path="/sys/requests" element={<SystemAdminPlaceholder title="Requests & Module Performance" />} />
+              <Route path="/sys/logs" element={<AuditLogs />} />
+              <Route path="/sys/monitoring" element={<SystemMonitoring />} />
+              <Route path="/sys/database" element={<DatabaseHealth />} />
+              <Route path="/sys/integrations" element={<SystemIntegrations />} />
+              <Route path="/sys/requests" element={<SystemRequests />} />
               {/* Inspector routes */}
               <Route path="/inspector/assigned-inspections" element={
                 <ProtectedRoleRoute allowedRoles={["BSI_User"]}>

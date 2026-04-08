@@ -300,11 +300,7 @@ export function AppSidebar() {
         {
           label: "User Management",
           items: [
-            { title: "View Users", url: "/sys/users", icon: UserSearch },
-            { title: "Create / Edit Users", url: "/sys/users", icon: UserPlus },
-            { title: "Assign Roles", url: "/sys/users", icon: Users },
-            { title: "User Activity Logs", url: "/sys/logs", icon: FileText },
-            { title: "Citizen Search", url: "/staff/search-citizens", icon: UserSearch },
+            { title: "Users Management", url: "/sys/users", icon: UserSearch },
           ],
         },
         {

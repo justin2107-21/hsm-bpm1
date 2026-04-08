@@ -14,6 +14,8 @@ const LguAdminDashboard = () => {
       const { data } = await supabase.from("service_requests").select("id, status").limit(500);
       return data || [];
     },
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const { data: cases = [] } = useQuery({
@@ -22,6 +24,8 @@ const LguAdminDashboard = () => {
       const { data } = await supabase.from("surveillance_cases").select("id, disease, status").limit(500);
       return data || [];
     },
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const { data: vaccinations = [] } = useQuery({
@@ -30,6 +34,8 @@ const LguAdminDashboard = () => {
       const { data } = await supabase.from("vaccinations").select("id").limit(500);
       return data || [];
     },
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const { data: permits = [] } = useQuery({
@@ -38,6 +44,8 @@ const LguAdminDashboard = () => {
       const { data } = await supabase.from("sanitation_permits").select("id, status").limit(500);
       return data || [];
     },
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const underReview = requests.filter((r) => r.status === "Under Review").length;
@@ -47,9 +55,9 @@ const LguAdminDashboard = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold font-heading">LGU Admin Dashboard</h1>
+        <h1 className="text-2xl font-bold font-heading">Health Surveillance Center</h1>
         <p className="text-sm text-muted-foreground">
-          Municipal monitoring and analytics (read-only). No approvals, no user management.
+          Monitor municipal health services, vaccination programs, and disease surveillance in real-time
         </p>
       </div>
 

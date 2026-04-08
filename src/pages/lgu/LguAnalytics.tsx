@@ -110,15 +110,18 @@ const LguAnalytics = () => {
             <CardTitle className="text-sm font-heading">Requests by Type</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={280}>
               <BarChart data={reqChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 9 }} stroke="hsl(var(--muted-foreground))" />
                 <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
                 <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px", color: "hsl(var(--foreground))" }} />
-                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="value" fill="hsl(217, 91%, 60%)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
+            <div className="mt-3 text-xs text-muted-foreground">
+              <p>Total Request Types: {reqChartData.length} | Total Requests: {reqChartData.reduce((sum, item) => sum + item.value, 0)}</p>
+            </div>
           </CardContent>
         </Card>
 
@@ -127,16 +130,32 @@ const LguAnalytics = () => {
             <CardTitle className="text-sm font-heading">Permit Status Distribution</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={280}>
               <PieChart>
-                <Pie data={permitChartData} cx="50%" cy="50%" innerRadius={50} outerRadius={85} dataKey="value" paddingAngle={3}>
+                <Pie 
+                  data={permitChartData} 
+                  cx="50%" 
+                  cy="50%" 
+                  innerRadius={50} 
+                  outerRadius={85} 
+                  dataKey="value" 
+                  paddingAngle={3}
+                  label={({ name, value }) => `${name}: ${value}`}
+                  labelLine={false}
+                >
                   {permitChartData.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    <Cell key={i} fill={COLORS[i % COLORS.length]} style={{ cursor: 'pointer' }} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px", color: "hsl(var(--foreground))" }} />
+                <Tooltip 
+                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px", color: "hsl(var(--foreground))" }}
+                  formatter={(value, name, props) => [`Count: ${value}`, props.payload.name]}
+                />
               </PieChart>
             </ResponsiveContainer>
+            <div className="mt-3 text-xs text-muted-foreground">
+              <p>Total Permits: {permitChartData.reduce((sum, item) => sum + item.value, 0)}</p>
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -24,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, Calendar, User } from "lucide-react";
+import { Search, Calendar, User, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 
 export default function LguInspections() {
   const [search, setSearch] = useState("");
@@ -114,38 +114,61 @@ export default function LguInspections() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <Card className="glass-card">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <Card className="glass-card border-l-4 border-l-blue-500">
           <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold">{inspections.length}</div>
-              <p className="text-xs text-muted-foreground mt-1">Total Inspections</p>
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Total Inspections</p>
+                <p className="text-2xl font-bold text-blue-400 mt-1">{inspections.length}</p>
+              </div>
+              <Calendar className="h-6 w-6 text-blue-400/50" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="glass-card border-l-4 border-l-yellow-500">
           <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600">
-                {
-                  inspections.filter(
-                    (i: any) => i.status === "scheduled" || i.status === "pending"
-                  ).length
-                }
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Scheduled</p>
+                <p className="text-2xl font-bold text-yellow-400 mt-1">
+                  {
+                    inspections.filter(
+                      (i: any) => i.status === "scheduled" || i.status === "pending"
+                    ).length
+                  }
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Scheduled</p>
+              <Clock className="h-6 w-6 text-yellow-400/50" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="glass-card border-l-4 border-l-green-500">
           <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-green-600">
-                {inspections.filter((i: any) => i.status === "completed").length}
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Completed</p>
+                <p className="text-2xl font-bold text-green-400 mt-1">
+                  {inspections.filter((i: any) => i.status === "completed").length}
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Completed</p>
+              <CheckCircle2 className="h-6 w-6 text-green-400/50" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card border-l-4 border-l-red-500">
+          <CardContent className="pt-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Issues</p>
+                <p className="text-2xl font-bold text-red-400 mt-1">
+                  {inspections.filter((i: any) => i.status === "failed" || i.status === "appeal").length}
+                </p>
+              </div>
+              <AlertCircle className="h-6 w-6 text-red-400/50" />
             </div>
           </CardContent>
         </Card>
